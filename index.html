@@ -5,102 +5,129 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pizza Calculator</title>
 
+  <!-- PicoCSS (gratis) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+
+  <!-- Tuo CSS (solo override leggeri) -->
   <link rel="stylesheet" href="./css/style.css" />
+
+  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+
   <script>
-    // CONFIG qui, così non devi scavare nel JS
+    // CONFIG
     window.APP_CONFIG = {
-      ENDPOINT: "https://script.google.com/macros/s/AKfycbyRDWkioaddDORYnHcod_q1d-f-apktkTQ9dbWBjut4y2Q976FYHEqqU4XdIA5OeS18IQ/exec",
-      CLIENT_ID: "13329073477-55053i7d2okr1cb10d7h3qfl3fq67059.apps.googleusercontent.com"
+      ENDPOINT: "INCOLLA_LA_TUA_URL_EXEC",
+      CLIENT_ID: "INCOLLA_IL_TUO_CLIENT_ID"
     };
   </script>
 </head>
 
 <body>
-  <h1>Pizza calculator</h1>
+  <main class="container">
+    <header class="appHeader">
+      <h1>Pizza calculator</h1>
+    </header>
 
-  <div class="card">
-    <div id="g_id_onload"
-      data-client_id=""
-      data-callback="onGoogleCredential"
-      data-auto_select="true">
-    </div>
-    <div class="g_id_signin" data-type="standard"></div>
-    <p class="muted" id="authState">Non loggato</p>
-  </div>
+    <!-- BLOCCO B: calcolo -->
+    <section class="box">
+      <h2>Calcolo impasto</h2>
 
-  <div class="card">
-    <h2>Calcolo impasto</h2>
+      <div class="grid">
+        <label>
+          Panetti
+          <input id="panetti" type="number" min="1" step="1" value="3">
+        </label>
 
-    <div class="row">
-      <div class="field">
-        <label>Panetti</label>
-        <input id="panetti" type="number" min="1" step="1" value="3">
+        <label>
+          Peso panetto (g)
+          <input id="peso_panetto" type="number" min="100" step="10" value="250">
+        </label>
       </div>
-      <div class="field">
-        <label>Peso panetto (g)</label>
-        <input id="peso_panetto" type="number" min="100" step="10" value="250">
-      </div>
-    </div>
 
-    <div class="row">
-      <div class="field">
-        <label>Idratazione (%)</label>
-        <input id="idratazione" type="number" min="50" max="90" step="0.5" value="75">
-      </div>
-      <div class="field">
-        <label>Temperatura (°C)</label>
-        <input id="temp" type="number" min="18" max="30" step="1" value="20">
-      </div>
-    </div>
+      <div class="grid">
+        <label>
+          Idratazione (%)
+          <input id="idratazione" type="number" min="50" max="90" step="0.5" value="75">
+        </label>
 
-    <div class="row">
-      <div class="field">
-        <label>Ore lievitazione</label>
-        <select id="fascia_ore">
-          <option>4-5</option>
-          <option selected>8-12</option>
-          <option>12-18</option>
-          <option>18-24</option>
-        </select>
+        <label>
+          Temperatura (°C)
+          <input id="temp" type="number" min="18" max="30" step="1" value="20">
+        </label>
       </div>
-      <div class="field">
-        <label>Sale (%) (1,6–2,2)</label>
-        <input id="sale_pct" type="number" min="1.6" max="2.2" step="0.1" value="1.8">
+
+      <div class="grid">
+        <label>
+          Ore lievitazione
+          <select id="fascia_ore">
+            <option>4-5</option>
+            <option selected>8-12</option>
+            <option>12-18</option>
+            <option>18-24</option>
+          </select>
+        </label>
+
+        <label>
+          Sale (%) (1,6–2,2)
+          <input id="sale_pct" type="number" min="1.6" max="2.2" step="0.1" value="1.8">
+        </label>
+
+        <label>
+          Olio (%)
+          <input id="olio_pct" type="number" min="0" max="10" step="0.5" value="2">
+        </label>
       </div>
-      <div class="field">
-        <label>Olio (%)</label>
-        <input id="olio_pct" type="number" min="0" max="10" step="0.5" value="2">
+
+      <small id="calcState" class="muted"></small>
+
+      <article id="out" class="resultBox"></article>
+    </section>
+
+    <!-- BLOCCO C: salvataggio/diario -->
+    <section class="box">
+      <h2>Salva calcolo</h2>
+
+      <!-- Login solo qui -->
+      <div id="authBox">
+        <div id="loggedOut">
+          <p class="muted">Per salvare serve il login.</p>
+
+          <div id="g_id_onload"
+               data-client_id=""
+               data-callback="onGoogleCredential"
+               data-auto_select="true">
+          </div>
+          <div class="g_id_signin" data-type="standard"></div>
+        </div>
+
+        <div id="loggedIn" style="display:none;">
+          <div class="saveRow">
+            <button id="saveBtn" class="contrast" disabled>Salva questo impasto</button>
+            <small id="who" class="muted"></small>
+          </div>
+
+          <div class="emojiRow" aria-label="Esito">
+            <button type="button" class="emojiBtn" data-emoji="😍" aria-label="Fantastico">😍</button>
+            <button type="button" class="emojiBtn" data-emoji="😐" aria-label="Ok">😐</button>
+            <button type="button" class="emojiBtn" data-emoji="🤬" aria-label="Male">🤬</button>
+          </div>
+          <input type="hidden" id="emoji" value="😐" />
+
+          <label>
+            Commento (opzionale)
+            <textarea id="commento" rows="3" placeholder="Note..."></textarea>
+          </label>
+        </div>
+
+        <small id="saveState" class="muted"></small>
       </div>
-    </div>
+    </section>
 
-    <p class="muted" id="calcState"></p>
-    <div class="card inner" id="out"></div>
-  </div>
-
-  <div class="card">
-    <h2>Diario esperimento</h2>
-
-    <div class="row">
-      <div class="field">
-        <label>Emoji</label>
-        <input id="emoji" placeholder="😋" />
-      </div>
-      <div class="field">
-        <label>Voto (1-5)</label>
-        <select id="voto">
-          <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
-          <option value="4">4</option><option value="5">5</option>
-        </select>
-      </div>
-    </div>
-
-    <label>Commento</label>
-    <textarea id="commento" rows="3" placeholder="Note..."></textarea>
-
-    <button id="saveBtn" disabled>Salva su Google Sheets</button>
-    <p class="muted" id="saveState"></p>
-  </div>
+    <footer class="appFooter">
+      <small class="muted">v0 — calcolo in browser, salvataggio su Sheets</small>
+    </footer>
+  </main>
 
   <script src="./js/app.js"></script>
 </body>
