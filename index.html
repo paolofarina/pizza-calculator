@@ -1,8 +1,113 @@
 <!doctype html>
-<html>
-  <head><meta charset="utf-8"><title>Pizza calculator</title></head>
-  <body>
-    <h1>Pizza calculator</h1>
-    <p>Se vedi questa pagina, GitHub Pages funziona.</p>
-  </body>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pizza Calculator</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 20px auto; padding: 0 12px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    label { display:block; font-size:14px; margin-top:12px; }
+    input, select, textarea { width: 100%; padding: 10px; font-size:16px; }
+    button { padding: 10px 14px; font-size:16px; cursor:pointer; }
+    .card { border:1px solid #ddd; border-radius:12px; padding:12px; margin-top:12px; }
+    .muted { color:#666; font-size:14px; }
+  </style>
+</head>
+<body>
+
+<h1>Pizza calculator</h1>
+
+<div class="card">
+  <div id="g_id_onload"
+    data-client_id="13329073477-55053i7d2okr1cb10d7h3qfl3fq67059.apps.googleusercontent.com"
+    data-callback="onGoogleCredential"
+    data-auto_select="true">
+  </div>
+  <div class="g_id_signin" data-type="standard"></div>
+  <p class="muted" id="authState">Non loggato</p>
+</div>
+
+<div class="card">
+  <h2>Dati esperimento (MVP)</h2>
+
+  <div class="row">
+    <div style="flex:1; min-width:160px;">
+      <label>Emoji</label>
+      <input id="emoji" placeholder="😋" />
+    </div>
+    <div style="flex:1; min-width:160px;">
+      <label>Voto (1-5)</label>
+      <select id="voto">
+        <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
+        <option value="4">4</option><option value="5">5</option>
+      </select>
+    </div>
+  </div>
+
+  <label>Commento</label>
+  <textarea id="commento" rows="3" placeholder="Note..."></textarea>
+
+  <button id="saveBtn" disabled>Salva su Google Sheets</button>
+  <p class="muted" id="saveState"></p>
+</div>
+
+<script>
+  const ENDPOINT = "https://script.google.com/macros/s/AKfycbykHyxlMtBWuXB1kAbEgHUnpED1isd-dqm1HnKsOJW2RAHXR6LcMrJz1SKLWx3zuCH5zQ/exec"; // .../exec
+
+  let idToken = null;
+
+  function onGoogleCredential(response) {
+    idToken = response.credential;
+    document.getElementById('saveBtn').disabled = false;
+    document.getElementById('authState').textContent = "Login OK (token ricevuto)";
+  }
+
+  async function saveExperiment() {
+    if (!idToken) {
+      alert("Devi fare login prima di salvare.");
+      return;
+    }
+
+    // MVP: qui per ora mando valori fissi + i tuoi campi note
+    // Nella fase dopo mettiamo il vero calcolo e i parametri.
+    const payload = {
+      panetti: 1,
+      peso_panetto: 550,
+      idratazione: 78,
+      temp: 21,
+      fascia_ore: "8-12",
+      sale_pct: 1.8,
+      olio_pct: 2.0,
+      farina_g: 305,
+      acqua_g: 238,
+      sale_g: 5.5,
+      olio_g: 6,
+      lievito_fresco_g: 1.2,
+      lievito_secco_g: 0.4,
+      emoji: document.getElementById('emoji').value || "",
+      voto: Number(document.getElementById('voto').value || 3),
+      commento: document.getElementById('commento').value || ""
+    };
+
+    document.getElementById('saveState').textContent = "Salvataggio...";
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_token: idToken, payload })
+    });
+
+    const data = await res.json();
+    if (!data.ok) {
+      document.getElementById('saveState').textContent = "Errore: " + data.error;
+      return;
+    }
+    document.getElementById('saveState').textContent = "Salvato ✅ come " + data.email;
+  }
+
+  document.getElementById('saveBtn').addEventListener('click', saveExperiment);
+</script>
+
+</body>
 </html>
