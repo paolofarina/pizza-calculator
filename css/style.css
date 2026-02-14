@@ -61,3 +61,71 @@
   margin-top: 1.25rem;
   padding-bottom: 1rem;
 }
+/* --- Storico --- */
+.historyHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.historyScroller {
+  margin-top: 0.75rem;
+  overflow-x: auto;
+  border: 1px solid var(--muted-border-color);
+  border-radius: 12px;
+}
+
+.historyTable {
+  border-collapse: collapse;
+  width: max-content; /* così le colonne scorrono */
+  min-width: 100%;
+}
+
+.historyTable th,
+.historyTable td {
+  border-bottom: 1px solid var(--muted-border-color);
+  padding: 0.6rem 0.75rem;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.historyTable thead th {
+  position: sticky;
+  top: 0;
+  background: var(--card-background-color);
+  z-index: 2;
+}
+
+.historyTable .stickyCol {
+  position: sticky;
+  left: 0;
+  background: var(--card-background-color);
+  z-index: 3;
+  min-width: 170px;
+}
+
+.historyCol {
+  cursor: pointer;
+}
+
+.historyCol:hover {
+  background: rgba(0,0,0,0.03);
+}
+
+.historyMeta {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.historyComment {
+  white-space: normal;
+  max-width: 220px;
+  line-height: 1.2;
+  opacity: 0.85;
+}
+
+/* dialog */
+#historyDialog article { max-width: 520px; }
+.dialogHeader { display:flex; justify-content:space-between; align-items:center; }
