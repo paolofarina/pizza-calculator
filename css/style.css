@@ -1,10 +1,63 @@
-body { font-family: system-ui, sans-serif; max-width: 720px; margin: 20px auto; padding: 0 12px; }
-.row { display:flex; gap:12px; flex-wrap:wrap; }
-.field { flex:1; min-width:160px; }
-label { display:block; font-size:14px; margin-top:12px; }
-input, select, textarea { width: 100%; padding: 10px; font-size:16px; box-sizing:border-box; }
-button { padding: 10px 14px; font-size:16px; cursor:pointer; }
-.card { border:1px solid #ddd; border-radius:12px; padding:12px; margin-top:12px; }
-.card.inner { margin-top:12px; }
-.muted { color:#666; font-size:14px; }
-hr { border:none; border-top:1px solid #eee; margin:10px 0; }
+/* Piccoli override senza combattere Pico */
+
+.appHeader h1 {
+  margin-bottom: 0.25rem;
+}
+
+.box {
+  margin-top: 1rem;
+}
+
+.muted {
+  opacity: 0.75;
+}
+
+/* Risultati */
+.resultBox {
+  margin-top: 0.75rem;
+  padding: 1rem;
+}
+
+.resultBox hr {
+  margin: 0.75rem 0;
+}
+
+/* Riga salva */
+.saveRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+/* Emoji toggle */
+.emojiRow {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0.75rem 0;
+}
+
+.emojiBtn {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.5rem;
+  line-height: 1;
+  border-radius: 0.75rem;
+  border: 1px solid var(--muted-border-color);
+  background: var(--card-background-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emojiBtn.active {
+  border-color: var(--contrast);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+.appFooter {
+  margin-top: 1.25rem;
+  padding-bottom: 1rem;
+}
