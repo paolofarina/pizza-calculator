@@ -194,9 +194,7 @@
       });
       text = await res.text();
       data = JSON.parse(text);
-      console.log("HISTORY raw response:", data);
-      console.log("HISTORY items length:", (data.items || []).length);
-
+      
     } catch (e) {
       if ($('saveState')) $('saveState').textContent = "Errore rete/JSON: " + String(e);
       return;
