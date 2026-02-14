@@ -90,21 +90,29 @@
       voto: Number(document.getElementById('voto').value || 3),
       commento: document.getElementById('commento').value || ""
     };
+document.getElementById('saveState').textContent = "Salvataggio...";
 
-    document.getElementById('saveState').textContent = "Salvataggio...";
-    const res = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id_token: idToken, payload })
-    });
+const body = new URLSearchParams();
+body.set("id_token", idToken);
+body.set("payload", JSON.stringify(payload));
 
-    const data = await res.json();
-    if (!data.ok) {
-      document.getElementById('saveState').textContent = "Errore: " + data.error;
-      return;
-    }
-    document.getElementById('saveState').textContent = "Salvato ✅ come " + data.email;
-  }
+const res = await fetch(ENDPOINT, {
+  method: "POST",
+  headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+  body: body.toString()
+});
+
+const text = await res.text();
+let data;
+try { data = JSON.parse(text); }
+catch (e) { throw new Error("Risposta non JSON: " + text); }
+
+if (!data.ok) {
+  document.getElementById('saveState').textContent = "Errore: " + data.error;
+  return;
+}
+document.getElementById('saveState').textContent = "Salvato ✅ come " + data.email;
+
 
   document.getElementById('saveBtn').addEventListener('click', saveExperiment);
 </script>
