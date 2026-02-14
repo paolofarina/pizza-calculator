@@ -4,122 +4,104 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pizza Calculator</title>
+
+  <link rel="stylesheet" href="./css/style.css" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 20px auto; padding: 0 12px; }
-    .row { display:flex; gap:12px; flex-wrap:wrap; }
-    label { display:block; font-size:14px; margin-top:12px; }
-    input, select, textarea { width: 100%; padding: 10px; font-size:16px; }
-    button { padding: 10px 14px; font-size:16px; cursor:pointer; }
-    .card { border:1px solid #ddd; border-radius:12px; padding:12px; margin-top:12px; }
-    .muted { color:#666; font-size:14px; }
-  </style>
-</head>
-<body>
-
-<h1>Pizza calculator</h1>
-
-<div class="card">
-  <div id="g_id_onload"
-    data-client_id="13329073477-55053i7d2okr1cb10d7h3qfl3fq67059.apps.googleusercontent.com"
-    data-callback="onGoogleCredential"
-    data-auto_select="true">
-  </div>
-  <div class="g_id_signin" data-type="standard"></div>
-  <p class="muted" id="authState">Non loggato</p>
-</div>
-
-<div class="card">
-  <h2>Dati esperimento (MVP)</h2>
-
-  <div class="row">
-    <div style="flex:1; min-width:160px;">
-      <label>Emoji</label>
-      <input id="emoji" placeholder="😋" />
-    </div>
-    <div style="flex:1; min-width:160px;">
-      <label>Voto (1-5)</label>
-      <select id="voto">
-        <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
-        <option value="4">4</option><option value="5">5</option>
-      </select>
-    </div>
-  </div>
-
-  <label>Commento</label>
-  <textarea id="commento" rows="3" placeholder="Note..."></textarea>
-
-  <button id="saveBtn" disabled>Salva su Google Sheets</button>
-  <p class="muted" id="saveState"></p>
-</div>
-
-<script>
-  // INCOLLA QUI il tuo /exec
-  const ENDPOINT = "https://script.google.com/macros/s/AKfycbyRDWkioaddDORYnHcod_q1d-f-apktkTQ9dbWBjut4y2Q976FYHEqqU4XdIA5OeS18IQ/exec";
-
-  let idToken = null;
-
-  // Deve essere globale (window.), così Google la trova sempre
-  window.onGoogleCredential = function(response) {
-    idToken = response.credential;
-    document.getElementById('saveBtn').disabled = false;
-    document.getElementById('authState').textContent = "Login OK (token ricevuto)";
-  }
-
-  async function saveExperiment() {
-    if (!idToken) {
-      alert("Devi fare login prima di salvare.");
-      return;
-    }
-
-    const payload = {
-      panetti: 1,
-      peso_panetto: 550,
-      idratazione: 78,
-      temp: 21,
-      fascia_ore: "8-12",
-      sale_pct: 1.8,
-      olio_pct: 2.0,
-      farina_g: 305,
-      acqua_g: 238,
-      sale_g: 5.5,
-      olio_g: 6,
-      lievito_fresco_g: 1.2,
-      lievito_secco_g: 0.4,
-      emoji: document.getElementById('emoji').value || "",
-      voto: Number(document.getElementById('voto').value || 3),
-      commento: document.getElementById('commento').value || ""
+  <script>
+    // CONFIG qui, così non devi scavare nel JS
+    window.APP_CONFIG = {
+      ENDPOINT: "INCOLLA_LA_TUA_URL_EXEC",
+      CLIENT_ID: "INCOLLA_IL_TUO_CLIENT_ID"
     };
+  </script>
+</head>
 
-    document.getElementById('saveState').textContent = "Salvataggio...";
+<body>
+  <h1>Pizza calculator</h1>
 
-    const body = new URLSearchParams();
-    body.set("id_token", idToken);
-    body.set("payload", JSON.stringify(payload));
+  <div class="card">
+    <div id="g_id_onload"
+      data-client_id=""
+      data-callback="onGoogleCredential"
+      data-auto_select="true">
+    </div>
+    <div class="g_id_signin" data-type="standard"></div>
+    <p class="muted" id="authState">Non loggato</p>
+  </div>
 
-    let res, text, data;
-    try {
-      res = await fetch(ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: body.toString()
-      });
-      text = await res.text();
-      data = JSON.parse(text);
-    } catch (e) {
-      document.getElementById('saveState').textContent = "Errore rete/JSON: " + String(e);
-      return;
-    }
+  <div class="card">
+    <h2>Calcolo impasto</h2>
 
-    if (!data.ok) {
-      document.getElementById('saveState').textContent = "Errore: " + data.error;
-      return;
-    }
-    document.getElementById('saveState').textContent = "Salvato ✅ come " + data.email;
-  }
+    <div class="row">
+      <div class="field">
+        <label>Panetti</label>
+        <input id="panetti" type="number" min="1" step="1" value="3">
+      </div>
+      <div class="field">
+        <label>Peso panetto (g)</label>
+        <input id="peso_panetto" type="number" min="100" step="10" value="250">
+      </div>
+    </div>
 
-  document.getElementById('saveBtn').addEventListener('click', saveExperiment);
-</script>
+    <div class="row">
+      <div class="field">
+        <label>Idratazione (%)</label>
+        <input id="idratazione" type="number" min="50" max="90" step="0.5" value="75">
+      </div>
+      <div class="field">
+        <label>Temperatura (°C)</label>
+        <input id="temp" type="number" min="18" max="30" step="1" value="20">
+      </div>
+    </div>
 
+    <div class="row">
+      <div class="field">
+        <label>Ore lievitazione</label>
+        <select id="fascia_ore">
+          <option>4-5</option>
+          <option selected>8-12</option>
+          <option>12-18</option>
+          <option>18-24</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Sale (%) (1,6–2,2)</label>
+        <input id="sale_pct" type="number" min="1.6" max="2.2" step="0.1" value="1.8">
+      </div>
+      <div class="field">
+        <label>Olio (%)</label>
+        <input id="olio_pct" type="number" min="0" max="10" step="0.5" value="2">
+      </div>
+    </div>
+
+    <p class="muted" id="calcState"></p>
+    <div class="card inner" id="out"></div>
+  </div>
+
+  <div class="card">
+    <h2>Diario esperimento</h2>
+
+    <div class="row">
+      <div class="field">
+        <label>Emoji</label>
+        <input id="emoji" placeholder="😋" />
+      </div>
+      <div class="field">
+        <label>Voto (1-5)</label>
+        <select id="voto">
+          <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
+          <option value="4">4</option><option value="5">5</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Commento</label>
+    <textarea id="commento" rows="3" placeholder="Note..."></textarea>
+
+    <button id="saveBtn" disabled>Salva su Google Sheets</button>
+    <p class="muted" id="saveState"></p>
+  </div>
+
+  <script src="./js/app.js"></script>
 </body>
 </html>
