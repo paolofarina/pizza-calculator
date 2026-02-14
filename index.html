@@ -130,6 +130,32 @@
       </div>
     </section>
 
+<section id="historyView" class="box" style="display:none;">
+  <div class="historyHeader">
+    <h2>Storico impasti</h2>
+    <button id="backToFormBtn" type="button" class="secondary">← Indietro</button>
+  </div>
+
+  <small id="historyState" class="muted"></small>
+
+  <div class="historyScroller" id="historyScroller">
+    <!-- qui JS inietta la tabella -->
+  </div>
+</section>
+
+<dialog id="historyDialog">
+  <article>
+    <header class="dialogHeader">
+      <strong id="dlgTitle">Dettaglio</strong>
+      <button aria-label="Close" rel="prev" id="dlgCloseBtn"></button>
+    </header>
+    <div id="dlgBody"></div>
+  </article>
+</dialog>
+
+
+
+    
 
     <footer class="appFooter">
       <small class="muted">v0 — calcolo in browser, salvataggio su Sheets</small>
