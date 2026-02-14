@@ -26,7 +26,7 @@
     ]
   };
 
-  // Callback globale richiesto da Google GIS
+  // ===== Auth callback =====
   window.onGoogleCredential = function (response) {
     idToken = response.credential;
 
@@ -35,9 +35,12 @@
     if ($('loggedIn')) $('loggedIn').style.display = "block";
 
     if ($('saveBtn')) $('saveBtn').disabled = false;
+    if ($('openHistoryBtn')) $('openHistoryBtn').disabled = false;
+
     if ($('who')) $('who').textContent = "Login OK";
   };
 
+  // ===== Utils =====
   function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
   function interpLinear(x, x0, y0, x1, y1) {
     if (x1 === x0) return y0;
@@ -48,8 +51,21 @@
     const p = Math.pow(10, d);
     return Math.round(n * p) / p;
   }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+  function formatTs(ts) {
+    try { return new Date(ts).toLocaleString('it-IT'); }
+    catch { return String(ts || ""); }
+  }
+  function fmtCell(v) {
+    if (v === null || v === undefined || v === "") return "—";
+    return String(v);
+  }
 
-  // ritorna percentuale lievito fresco (es 0.35 = 0.35%)
+  // ===== Calcolo =====
   function yeastPercent(tempC, band) {
     const { temps, bands, values } = YEAST_TABLE;
     const j = bands.indexOf(band);
@@ -101,8 +117,8 @@
 
     const flour = total / (1 + H + S + O + Y);
     const water = flour * H;
-    const salt  = flour * S;
-    const oil   = flour * O;
+    const salt = flour * S;
+    const oil = flour * O;
     const yeastFresh = flour * Y;
     const yeastDry = yeastFresh / 3;
 
@@ -139,15 +155,16 @@
       validateInputs(inputs);
       const out = calcRecipe(inputs);
       renderRecipe(out);
-      $('calcState').textContent = "";
+      if ($('calcState')) $('calcState').textContent = "";
       return { inputs, out };
     } catch (e) {
-      $('out').innerHTML = "";
-      $('calcState').textContent = String(e.message || e);
+      if ($('out')) $('out').innerHTML = "";
+      if ($('calcState')) $('calcState').textContent = String(e.message || e);
       return null;
     }
   }
 
+  // ===== Salvataggio =====
   async function saveExperiment() {
     if (!idToken) return alert("Devi fare login prima di salvare.");
     if (!ENDPOINT) return alert("ENDPOINT mancante in APP_CONFIG.");
@@ -158,11 +175,11 @@
     const payload = {
       ...r.inputs,
       ...r.out,
-      emoji: $('emoji').value || "😐",
-      commento: $('commento').value || ""
+      emoji: $('emoji')?.value || "😐",
+      commento: $('commento')?.value || ""
     };
 
-    $('saveState').textContent = "Salvataggio...";
+    if ($('saveState')) $('saveState').textContent = "Salvataggio...";
 
     const body = new URLSearchParams();
     body.set("id_token", idToken);
@@ -178,35 +195,191 @@
       text = await res.text();
       data = JSON.parse(text);
     } catch (e) {
-      $('saveState').textContent = "Errore rete/JSON: " + String(e);
+      if ($('saveState')) $('saveState').textContent = "Errore rete/JSON: " + String(e);
       return;
     }
 
     if (!data.ok) {
-      $('saveState').textContent = "Errore: " + data.error;
+      if ($('saveState')) $('saveState').textContent = "Errore: " + data.error;
       return;
     }
-    $('saveState').textContent = "Salvato ✅ come " + data.email;
+    if ($('saveState')) $('saveState').textContent = "Salvato ✅ come " + data.email;
     if ($('who')) $('who').textContent = data.email;
   }
 
   function setupEmojiToggle() {
     const buttons = document.querySelectorAll('.emojiBtn');
-    if (!buttons.length) return;
+    if (!buttons.length || !$('emoji')) return;
 
     const setActive = (emoji) => {
       buttons.forEach(b => b.classList.toggle('active', b.dataset.emoji === emoji));
       $('emoji').value = emoji;
     };
 
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => setActive(btn.dataset.emoji));
-    });
+    buttons.forEach(btn => btn.addEventListener('click', () => setActive(btn.dataset.emoji)));
 
-    // default
     setActive("😐");
   }
 
+  // ===== Storico: view switching =====
+  function showHistoryView(show) {
+    const hv = $('historyView');
+    const allBoxes = document.querySelectorAll('main.container > section.box');
+
+    allBoxes.forEach(sec => sec.style.display = "none");
+
+    if (show) {
+      if (hv) hv.style.display = "block";
+    } else {
+      allBoxes.forEach(sec => {
+        if (sec.id !== 'historyView') sec.style.display = "block";
+      });
+    }
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
+  async function loadMyExperiments(limit = 25) {
+    if (!idToken) return alert("Devi fare login.");
+    if (!ENDPOINT) return alert("ENDPOINT mancante in APP_CONFIG.");
+
+    if ($('historyState')) $('historyState').textContent = "Caricamento...";
+
+    const body = new URLSearchParams();
+    body.set("action", "list");
+    body.set("id_token", idToken);
+    body.set("payload", JSON.stringify({ limit, offset: 0 }));
+
+    let data;
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: body.toString()
+      });
+      const text = await res.text();
+      data = JSON.parse(text);
+    } catch (e) {
+      if ($('historyState')) $('historyState').textContent = "Errore: " + String(e);
+      return;
+    }
+
+    if (!data.ok) {
+      if ($('historyState')) $('historyState').textContent = "Errore: " + data.error;
+      return;
+    }
+
+    const items = data.items || [];
+    if ($('historyState')) $('historyState').textContent = `Trovati ${items.length} salvataggi.`;
+    renderHistoryMatrix(items);
+  }
+
+  function renderHistoryMatrix(items) {
+    const scroller = $('historyScroller');
+    if (!scroller) return;
+
+    if (!items.length) {
+      scroller.innerHTML = `<p class="muted" style="padding:12px;">Nessun salvataggio.</p>`;
+      return;
+    }
+
+    const rows = [
+      { key: "farina_g", label: "Farina (g)" },
+      { key: "acqua_g", label: "Acqua (g)" },
+      { key: "sale_g", label: "Sale (g)" },
+      { key: "olio_g", label: "Olio (g)" },
+      { key: "lievito_fresco_g", label: "Lievito fresco (g)" },
+      { key: "lievito_secco_g", label: "Lievito secco (g)" },
+      { key: "idratazione", label: "Idratazione (%)" },
+      { key: "temp", label: "Temperatura (°C)" },
+      { key: "fascia_ore", label: "Ore" },
+    ];
+
+    const thCols = items.map((it, idx) => {
+      const emoji = it.emoji || "";
+      const date = formatTs(it.ts);
+      return `
+        <th class="historyCol" data-idx="${idx}">
+          <div class="historyMeta">${escapeHtml(emoji)} ${escapeHtml(date)}</div>
+        </th>`;
+    }).join("");
+
+    const bodyRows = rows.map(r => {
+      const tds = items.map((it, idx) => `
+        <td class="historyCol" data-idx="${idx}">${escapeHtml(fmtCell(it[r.key]))}</td>
+      `).join("");
+      return `<tr>
+        <th class="stickyCol">${escapeHtml(r.label)}</th>
+        ${tds}
+      </tr>`;
+    }).join("");
+
+    const commentRow = `
+      <tr>
+        <th class="stickyCol">Commento</th>
+        ${items.map((it, idx) => `
+          <td class="historyCol historyComment" data-idx="${idx}">${escapeHtml(it.commento || "")}</td>
+        `).join("")}
+      </tr>`;
+
+    scroller.innerHTML = `
+      <table class="historyTable">
+        <thead>
+          <tr>
+            <th class="stickyCol">Ingrediente</th>
+            ${thCols}
+          </tr>
+        </thead>
+        <tbody>
+          ${bodyRows}
+          ${commentRow}
+        </tbody>
+      </table>
+    `;
+
+    scroller.querySelectorAll('.historyCol').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const idx = Number(cell.dataset.idx);
+        openHistoryDialog(items[idx]);
+      });
+    });
+  }
+
+  function openHistoryDialog(it) {
+    const dlg = $('historyDialog');
+    const title = $('dlgTitle');
+    const body = $('dlgBody');
+
+    if (!dlg || !title || !body) return;
+
+    title.textContent = `${it.emoji || ""} ${formatTs(it.ts)}`;
+
+    body.innerHTML = `
+      <p><strong>Impasto</strong></p>
+      <ul>
+        <li>Panetti: <strong>${escapeHtml(fmtCell(it.panetti))}</strong></li>
+        <li>Peso panetto: <strong>${escapeHtml(fmtCell(it.peso_panetto))}</strong> g</li>
+        <li>Idratazione: <strong>${escapeHtml(fmtCell(it.idratazione))}</strong>%</li>
+        <li>Temp: <strong>${escapeHtml(fmtCell(it.temp))}</strong> °C</li>
+        <li>Ore: <strong>${escapeHtml(it.fascia_ore || "")}</strong></li>
+        <li>Sale: <strong>${escapeHtml(fmtCell(it.sale_pct))}</strong>%</li>
+        <li>Olio: <strong>${escapeHtml(fmtCell(it.olio_pct))}</strong>%</li>
+      </ul>
+      <p><strong>Ingredienti (totale)</strong></p>
+      <ul>
+        <li>Farina: <strong>${escapeHtml(fmtCell(it.farina_g))}</strong> g</li>
+        <li>Acqua: <strong>${escapeHtml(fmtCell(it.acqua_g))}</strong> g</li>
+        <li>Sale: <strong>${escapeHtml(fmtCell(it.sale_g))}</strong> g</li>
+        <li>Olio: <strong>${escapeHtml(fmtCell(it.olio_g))}</strong> g</li>
+        <li>Lievito fresco: <strong>${escapeHtml(fmtCell(it.lievito_fresco_g))}</strong> g</li>
+        <li>Lievito secco: <strong>${escapeHtml(fmtCell(it.lievito_secco_g))}</strong> g</li>
+      </ul>
+      ${it.commento ? `<p><strong>Commento</strong><br>${escapeHtml(it.commento)}</p>` : ""}
+    `;
+
+    if (typeof dlg.showModal === "function") dlg.showModal();
+  }
+
+  // ===== Init =====
   document.addEventListener('DOMContentLoaded', () => {
     // Stato auth iniziale
     if ($('loggedOut')) $('loggedOut').style.display = "block";
@@ -215,11 +388,21 @@
     setupEmojiToggle();
 
     // Ricalcolo live
-    ['panetti','peso_panetto','idratazione','temp','fascia_ore','sale_pct','olio_pct']
-      .forEach(id => $(id).addEventListener('input', recalc));
+    ['panetti', 'peso_panetto', 'idratazione', 'temp', 'fascia_ore', 'sale_pct', 'olio_pct']
+      .forEach(id => $(id)?.addEventListener('input', recalc));
 
     // Salvataggio
-    if ($('saveBtn')) $('saveBtn').addEventListener('click', saveExperiment);
+    $('saveBtn')?.addEventListener('click', saveExperiment);
+
+    // Storico: apri/chiudi
+    $('openHistoryBtn')?.addEventListener('click', async () => {
+      showHistoryView(true);
+      await loadMyExperiments(25);
+    });
+    $('backToFormBtn')?.addEventListener('click', () => showHistoryView(false));
+
+    // Dialog close
+    $('dlgCloseBtn')?.addEventListener('click', () => $('historyDialog')?.close());
 
     recalc();
   });
