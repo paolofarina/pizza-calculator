@@ -21,7 +21,7 @@
 
 <div class="card">
   <div id="g_id_onload"
-    data-client_id="13329073477-55053i7d2okr1cb10d7h3qfl3fq67059.apps.googleusercontent.com"
+    data-client_id="INCOLLA_IL_TUO_CLIENT_ID"
     data-callback="onGoogleCredential"
     data-auto_select="true">
   </div>
@@ -54,11 +54,13 @@
 </div>
 
 <script>
-  const ENDPOINT = "https://script.google.com/macros/s/AKfycbyRDWkioaddDORYnHcod_q1d-f-apktkTQ9dbWBjut4y2Q976FYHEqqU4XdIA5OeS18IQ/exec"; // .../exec
+  // INCOLLA QUI il tuo /exec
+  const ENDPOINT = "INCOLLA_LA_TUA_URL_EXEC";
 
   let idToken = null;
 
-  function onGoogleCredential(response) {
+  // Deve essere globale (window.), così Google la trova sempre
+  window.onGoogleCredential = function(response) {
     idToken = response.credential;
     document.getElementById('saveBtn').disabled = false;
     document.getElementById('authState').textContent = "Login OK (token ricevuto)";
@@ -70,8 +72,6 @@
       return;
     }
 
-    // MVP: qui per ora mando valori fissi + i tuoi campi note
-    // Nella fase dopo mettiamo il vero calcolo e i parametri.
     const payload = {
       panetti: 1,
       peso_panetto: 550,
@@ -90,29 +90,33 @@
       voto: Number(document.getElementById('voto').value || 3),
       commento: document.getElementById('commento').value || ""
     };
-document.getElementById('saveState').textContent = "Salvataggio...";
 
-const body = new URLSearchParams();
-body.set("id_token", idToken);
-body.set("payload", JSON.stringify(payload));
+    document.getElementById('saveState').textContent = "Salvataggio...";
 
-const res = await fetch(ENDPOINT, {
-  method: "POST",
-  headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-  body: body.toString()
-});
+    const body = new URLSearchParams();
+    body.set("id_token", idToken);
+    body.set("payload", JSON.stringify(payload));
 
-const text = await res.text();
-let data;
-try { data = JSON.parse(text); }
-catch (e) { throw new Error("Risposta non JSON: " + text); }
+    let res, text, data;
+    try {
+      res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: body.toString()
+      });
+      text = await res.text();
+      data = JSON.parse(text);
+    } catch (e) {
+      document.getElementById('saveState').textContent = "Errore rete/JSON: " + String(e);
+      return;
+    }
 
-if (!data.ok) {
-  document.getElementById('saveState').textContent = "Errore: " + data.error;
-  return;
-}
-document.getElementById('saveState').textContent = "Salvato ✅ come " + data.email;
-
+    if (!data.ok) {
+      document.getElementById('saveState').textContent = "Errore: " + data.error;
+      return;
+    }
+    document.getElementById('saveState').textContent = "Salvato ✅ come " + data.email;
+  }
 
   document.getElementById('saveBtn').addEventListener('click', saveExperiment);
 </script>
