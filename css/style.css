@@ -1,0 +1,10 @@
+body { font-family: system-ui, sans-serif; max-width: 720px; margin: 20px auto; padding: 0 12px; }
+.row { display:flex; gap:12px; flex-wrap:wrap; }
+.field { flex:1; min-width:160px; }
+label { display:block; font-size:14px; margin-top:12px; }
+input, select, textarea { width: 100%; padding: 10px; font-size:16px; box-sizing:border-box; }
+button { padding: 10px 14px; font-size:16px; cursor:pointer; }
+.card { border:1px solid #ddd; border-radius:12px; padding:12px; margin-top:12px; }
+.card.inner { margin-top:12px; }
+.muted { color:#666; font-size:14px; }
+hr { border:none; border-top:1px solid #eee; margin:10px 0; }
