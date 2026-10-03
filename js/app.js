@@ -421,8 +421,7 @@ const YEAST_TABLE = {
          <strong>Acqua:</strong> ${out.acqua_g} g<br>
          <strong>Sale:</strong> ${out.sale_g} g<br>
          <strong>Olio:</strong> ${out.olio_g} g<br>
-         <strong>Lievito — scegline uno:</strong><br>
-         fresco ${out.lievito_fresco_g} g <strong>oppure</strong> secco ${out.lievito_secco_g} g
+         <strong>Lievito:</strong> fresco ${out.lievito_fresco_g} g <strong>oppure</strong> secco ${out.lievito_secco_g} g
        </p>`;
   }
 
@@ -905,7 +904,7 @@ const YEAST_TABLE = {
         <li>Acqua: <strong>${escapeHtml(fmtCell(it.acqua_g))}</strong> g</li>
         <li>Sale: <strong>${escapeHtml(fmtCell(it.sale_g))}</strong> g</li>
         <li>Olio: <strong>${escapeHtml(fmtCell(it.olio_g))}</strong> g</li>
-        <li><strong>Lievito — scegline uno:</strong> fresco <strong>${escapeHtml(fmtCell(it.lievito_fresco_g))}</strong> g <strong>oppure</strong> secco <strong>${escapeHtml(fmtCell(it.lievito_secco_g))}</strong> g</li>
+        <li><strong>Lievito:</strong> fresco <strong>${escapeHtml(fmtCell(it.lievito_fresco_g))}</strong> g <strong>oppure</strong> secco <strong>${escapeHtml(fmtCell(it.lievito_secco_g))}</strong> g</li>
       </ul>
       <hr>
       <p><strong>Valutazione</strong></p>
