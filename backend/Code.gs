@@ -144,7 +144,8 @@ function getPrefsSheet_(ss) {
 }
 
 function getDefaultForEmail_(sh, email) {
-  const data = sh.getDataRange().getValues();
+  // Preserva "9-12" come testo: getValues() può restituirlo come oggetto Date.
+  const data = sh.getDataRange().getDisplayValues();
   if (data.length < 2) return null;
 
   const headers = data[0].map(h => String(h || '').trim());
@@ -178,11 +179,17 @@ function saveDefaultForEmail_(sh, email, p) {
     }
   }
 
+  const band = String(p.fascia_ore ?? '').trim();
   const row = [
     email, new Date(),
     p.panetti ?? '', p.peso_panetto ?? '', p.idratazione ?? '', p.temp ?? '',
-    p.fascia_ore ?? '', p.sale_pct ?? '', p.olio_pct ?? ''
+    band, p.sale_pct ?? '', p.olio_pct ?? ''
   ];
+
+  // Impedisce a Sheets di trasformare fasce come "9-12" in date.
+  const idxBand = headers.indexOf('fascia_ore');
+  const writeRow = targetRow > 0 ? targetRow : sh.getLastRow() + 1;
+  if (idxBand >= 0) sh.getRange(writeRow, idxBand + 1).setNumberFormat('@');
 
   if (targetRow > 0) sh.getRange(targetRow, 1, 1, row.length).setValues([row]);
   else sh.appendRow(row);
