@@ -83,6 +83,11 @@
       <small id="calcState" class="muted"></small>
 
       <article id="out" class="resultBox"></article>
+
+      <div class="defaultRow">
+        <button id="setDefaultBtn" type="button" class="secondary">⭐ Imposta come default</button>
+        <small id="defaultState" class="muted"></small>
+      </div>
     </section>
 
     <!-- BLOCCO C: salvataggio/diario -->
@@ -109,11 +114,12 @@
           </div>
 
           <div class="emojiRow" aria-label="Esito">
+            <button type="button" class="emojiBtn" data-emoji="⏳" aria-label="Da valutare" title="Da valutare">⏳</button>
             <button type="button" class="emojiBtn" data-emoji="😍" aria-label="Fantastico">😍</button>
             <button type="button" class="emojiBtn" data-emoji="😐" aria-label="Ok">😐</button>
             <button type="button" class="emojiBtn" data-emoji="🤬" aria-label="Male">🤬</button>
           </div>
-          <input type="hidden" id="emoji" value="😐" />
+          <input type="hidden" id="emoji" value="⏳" />
 
           <label>
             Commento (opzionale)
