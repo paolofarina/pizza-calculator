@@ -247,37 +247,20 @@ const YEAST_TABLE = {
     const payload = {
       ...r.inputs,
       ...r.out,
-      emoji: $('emoji')?.value || "😐",
+      emoji: $('emoji')?.value || "⏳",
       commento: $('commento')?.value || ""
     };
 
-    if ($('saveState')) $('saveState').textContent = "Salvataggio...";
-
-    const body = new URLSearchParams();
-    body.set("id_token", idToken);
-    body.set("payload", JSON.stringify(payload));
-
-    let res, text, data;
     try {
-      res = await fetch(ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: body.toString()
-      });
-      text = await res.text();
-      data = JSON.parse(text);
-      
+      if ($('saveState')) $('saveState').textContent = "Salvataggio...";
+      const data = await apiAction("save", payload);
+      if ($('saveState')) $('saveState').textContent = "Salvato ✅ come " + data.email;
+      if ($('who')) $('who').textContent = data.email;
     } catch (e) {
-      if ($('saveState')) $('saveState').textContent = "Errore rete/JSON: " + String(e);
-      return;
+      const message = String(e.message || e);
+      console.error("SAVE error:", e);
+      if ($('saveState')) $('saveState').textContent = "Errore salvataggio: " + message;
     }
-
-    if (!data.ok) {
-      if ($('saveState')) $('saveState').textContent = "Errore: " + data.error;
-      return;
-    }
-    if ($('saveState')) $('saveState').textContent = "Salvato ✅ come " + data.email;
-    if ($('who')) $('who').textContent = data.email;
   }
 
   function setupEmojiToggle() {
