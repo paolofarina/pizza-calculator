@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 
   <!-- Tuo CSS (solo override leggeri) -->
-  <link rel="stylesheet" href="./css/style.css?v=20261003-1" />
+  <link rel="stylesheet" href="./css/style.css?v=20261003-2" />
 
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -103,10 +103,22 @@
         <div id="savePanel" class="savePanel" hidden>
           <strong>Come è venuto?</strong>
           <div class="saveChoices" aria-label="Esito">
-            <button type="button" id="saveLaterBtn" class="secondary">⏳ Valuto dopo</button>
-            <button type="button" class="emojiBtn" data-emoji="😍" aria-label="Fantastico" title="Fantastico">😍</button>
-            <button type="button" class="emojiBtn" data-emoji="😐" aria-label="Ok" title="Ok">😐</button>
-            <button type="button" class="emojiBtn" data-emoji="🤬" aria-label="Male" title="Male">🤬</button>
+            <button type="button" id="saveLaterBtn" class="saveChoiceBtn secondary" data-emoji="⏳">
+              <span class="saveChoiceIcon">⏳</span>
+              <span>Valuto dopo</span>
+            </button>
+            <button type="button" class="saveChoiceBtn secondary ratingChoiceBtn" data-emoji="😍">
+              <span class="saveChoiceIcon">😍</span>
+              <span>Ottimo!</span>
+            </button>
+            <button type="button" class="saveChoiceBtn secondary ratingChoiceBtn" data-emoji="😐">
+              <span class="saveChoiceIcon">😐</span>
+              <span>Medio...</span>
+            </button>
+            <button type="button" class="saveChoiceBtn secondary ratingChoiceBtn" data-emoji="🤬">
+              <span class="saveChoiceIcon">🤬</span>
+              <span>Da rivedere!</span>
+            </button>
           </div>
           <input type="hidden" id="emoji" value="⏳">
           <div id="ratingDetails" hidden>
@@ -152,6 +164,6 @@
     </footer>
   </main>
 
-  <script src="./js/app.js?v=20261003-1"></script>
+  <script src="./js/app.js?v=20261003-2"></script>
 </body>
 </html>
