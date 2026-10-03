@@ -34,6 +34,7 @@ const YEAST_TABLE = {
     if ($('who')) $('who').textContent = "Sessione Google recuperata";
 
     await loadMyDefault();
+    await checkLatestPendingRating();
   };
 
   window.onGooglePromptMoment = function (notification) {
@@ -335,6 +336,84 @@ const YEAST_TABLE = {
     ratingButtons.forEach(btn => btn.addEventListener('click', () => setActive(btn.dataset.emoji)));
     $('saveLaterBtn')?.addEventListener('click', () => saveExperiment("⏳"));
     $('confirmSaveBtn')?.addEventListener('click', () => saveExperiment());
+  }
+
+  // ===== Promemoria valutazione dell'ultimo salvataggio =====
+  async function checkLatestPendingRating() {
+    if (!idToken) return;
+
+    try {
+      const data = await apiAction("list", { limit: 1, offset: 0 });
+      const latest = (data.items || [])[0];
+
+      // Regola intenzionale: si propone SOLO l'ultimo salvataggio assoluto.
+      // Se l'ultimo è già valutato, eventuali vecchi ⏳ non generano popup.
+      if (!latest || String(latest.emoji || "").trim() !== "⏳" || !latest.id) return;
+
+      openPendingRatingDialog(latest);
+    } catch (e) {
+      console.debug("[PizzaDebug] controllo ultimo salvataggio fallito", e);
+    }
+  }
+
+  function openPendingRatingDialog(it) {
+    const dlg = $('pendingRatingDialog');
+    if (!dlg) return;
+
+    const total = Number(it.panetti || 0) * Number(it.peso_panetto || 0);
+
+    if ($('pendingSummary')) {
+      $('pendingSummary').innerHTML = `
+        <p>Ho trovato il tuo ultimo salvataggio lasciato <strong>da valutare</strong>:</p>
+        <div class="pendingRecipeSummary">
+          <div><strong>${escapeHtml(formatTs(it.ts))}</strong></div>
+          <div>${escapeHtml(fmtCell(it.panetti))} panetti × ${escapeHtml(fmtCell(it.peso_panetto))} g</div>
+          <div>Idratazione ${escapeHtml(fmtCell(it.idratazione))}% · ${escapeHtml(fmtCell(it.temp))} °C · ${escapeHtml(it.fascia_ore || "")} h</div>
+          ${Number.isFinite(total) && total > 0 ? `<div>Totale impasto: ${escapeHtml(total)} g</div>` : ""}
+        </div>
+      `;
+    }
+
+    if ($('pendingCommento')) $('pendingCommento').value = "";
+    if ($('pendingState')) $('pendingState').textContent = "";
+    if ($('pendingSaveBtn')) $('pendingSaveBtn').disabled = true;
+
+    let selectedEmoji = null;
+    const buttons = dlg.querySelectorAll('.pendingChoiceBtn');
+
+    buttons.forEach(btn => {
+      btn.classList.remove('active');
+      btn.onclick = () => {
+        selectedEmoji = btn.dataset.emoji;
+        buttons.forEach(b => b.classList.toggle('active', b === btn));
+        if ($('pendingSaveBtn')) $('pendingSaveBtn').disabled = false;
+      };
+    });
+
+    if ($('pendingLaterBtn')) $('pendingLaterBtn').onclick = () => dlg.close();
+    if ($('pendingCloseBtn')) $('pendingCloseBtn').onclick = () => dlg.close();
+
+    if ($('pendingSaveBtn')) {
+      $('pendingSaveBtn').onclick = async () => {
+        if (!selectedEmoji) return;
+
+        const state = $('pendingState');
+        const btn = $('pendingSaveBtn');
+
+        try {
+          btn.disabled = true;
+          if (state) state.textContent = "Aggiornamento...";
+          await updateExperimentRating(it, selectedEmoji, $('pendingCommento')?.value || "");
+          if (state) state.textContent = "Valutazione salvata ✓";
+          setTimeout(() => dlg.close(), 400);
+        } catch (e) {
+          btn.disabled = false;
+          if (state) state.textContent = "Errore: " + String(e.message || e);
+        }
+      };
+    }
+
+    if (typeof dlg.showModal === "function" && !dlg.open) dlg.showModal();
   }
 
   // ===== Storico: view switching =====
