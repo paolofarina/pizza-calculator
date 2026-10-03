@@ -153,12 +153,7 @@ const YEAST_TABLE = {
       await apiAction("save_default", r.inputs);
       const check = await apiAction("get_default");
       if (check.default) applyInputsToUI(check.default);
-      const savedBand = String(check.default?.fascia_ore ?? "").trim();
-      if ($('defaultState')) {
-        $('defaultState').textContent = savedBand
-          ? "Mio default salvato ✓ · " + savedBand + " h"
-          : "Mio default salvato ✓";
-      }
+      if ($('defaultState')) $('defaultState').textContent = "Mio default salvato ✓";
     } catch (e) {
       if ($('defaultState')) $('defaultState').textContent = "Errore default: " + String(e.message || e);
     }
@@ -171,12 +166,7 @@ const YEAST_TABLE = {
       const data = await apiAction("get_default");
       if (data.default) {
         applyInputsToUI(data.default);
-        const band = String(data.default.fascia_ore ?? "").trim();
-        if ($('defaultState')) {
-          $('defaultState').textContent = band
-            ? "Mio default caricato · " + band + " h"
-            : "Mio default caricato";
-        }
+        if ($('defaultState')) $('defaultState').textContent = "Mio default caricato";
       } else {
         if ($('defaultState')) $('defaultState').textContent = "Nessun default personale salvato";
       }
