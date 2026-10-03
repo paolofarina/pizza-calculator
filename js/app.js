@@ -251,7 +251,7 @@ const YEAST_TABLE = {
     if ($('savePanel')) $('savePanel').hidden = true;
     if ($('ratingDetails')) $('ratingDetails').hidden = true;
     if ($('emoji')) $('emoji').value = "⏳";
-    document.querySelectorAll('#savePanel .emojiBtn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#savePanel .ratingChoiceBtn').forEach(b => b.classList.remove('active'));
   }
 
   function openSavePanel() {
@@ -301,8 +301,11 @@ const YEAST_TABLE = {
       const data = await apiAction("save", payload);
 
       if (btn) btn.textContent = "✓ Salvato";
-      if ($('saveState')) $('saveState').textContent =
-        selectedEmoji === "⏳" ? "Impasto salvato · da valutare." : "Impasto salvato correttamente.";
+      if ($('saveState')) {
+        $('saveState').textContent = selectedEmoji === "⏳"
+          ? "Salvato. Potrai valutarlo dopo aprendo questo impasto dallo Storico."
+          : "Impasto salvato correttamente.";
+      }
       if ($('who')) $('who').textContent = data.email;
       if ($('commento')) $('commento').value = "";
       closeSavePanel();
@@ -321,14 +324,15 @@ const YEAST_TABLE = {
   }
 
   function setupSaveFlow() {
-    const buttons = document.querySelectorAll('#savePanel .emojiBtn');
+    const ratingButtons = document.querySelectorAll('#savePanel .ratingChoiceBtn');
+
     const setActive = (emoji) => {
-      buttons.forEach(b => b.classList.toggle('active', b.dataset.emoji === emoji));
+      ratingButtons.forEach(b => b.classList.toggle('active', b.dataset.emoji === emoji));
       if ($('emoji')) $('emoji').value = emoji;
       if ($('ratingDetails')) $('ratingDetails').hidden = false;
     };
 
-    buttons.forEach(btn => btn.addEventListener('click', () => setActive(btn.dataset.emoji)));
+    ratingButtons.forEach(btn => btn.addEventListener('click', () => setActive(btn.dataset.emoji)));
     $('saveLaterBtn')?.addEventListener('click', () => saveExperiment("⏳"));
     $('confirmSaveBtn')?.addEventListener('click', () => saveExperiment());
   }
