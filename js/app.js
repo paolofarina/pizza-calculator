@@ -33,8 +33,10 @@ const YEAST_TABLE = {
     if ($('openHistoryBtn')) $('openHistoryBtn').disabled = false;
     if ($('who')) $('who').textContent = "Sessione Google recuperata";
 
-    await loadMyDefault();
-    await checkLatestPendingRating();
+    await Promise.all([
+      loadMyDefault(),
+      checkLatestPendingRating()
+    ]);
   };
 
   window.onGooglePromptMoment = function (notification) {
