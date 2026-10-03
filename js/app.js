@@ -5,10 +5,6 @@
 
   const $ = (id) => document.getElementById(id);
 
-  // Imposta client_id dentro g_id_onload
-  const gload = $('g_id_onload');
-  if (gload && CLIENT_ID) gload.setAttribute('data-client_id', CLIENT_ID);
-
   let idToken = null;
 
   // Tabella lievito fresco (% su farina)
@@ -157,7 +153,12 @@ const YEAST_TABLE = {
       await apiAction("save_default", r.inputs);
       const check = await apiAction("get_default");
       if (check.default) applyInputsToUI(check.default);
-      if ($('defaultState')) $('defaultState').textContent = "Mio default salvato ✓";
+      const savedBand = String(check.default?.fascia_ore ?? "").trim();
+      if ($('defaultState')) {
+        $('defaultState').textContent = savedBand
+          ? "Mio default salvato ✓ · " + savedBand + " h"
+          : "Mio default salvato ✓";
+      }
     } catch (e) {
       if ($('defaultState')) $('defaultState').textContent = "Errore default: " + String(e.message || e);
     }
@@ -168,14 +169,22 @@ const YEAST_TABLE = {
     try {
       if ($('defaultState')) $('defaultState').textContent = "Caricamento default...";
       const data = await apiAction("get_default");
+      console.log("DEFAULT backend response:", data);
+
       if (data.default) {
         applyInputsToUI(data.default);
-        if ($('defaultState')) $('defaultState').textContent = "Mio default caricato";
+        const band = String(data.default.fascia_ore ?? "").trim();
+        if ($('defaultState')) {
+          $('defaultState').textContent = band
+            ? "Mio default caricato · " + band + " h"
+            : "Mio default caricato";
+        }
       } else {
         if ($('defaultState')) $('defaultState').textContent = "Nessun default personale salvato";
       }
       if ($('who') && data.email) $('who').textContent = data.email;
     } catch (e) {
+      console.error("DEFAULT load error:", e);
       if ($('defaultState')) $('defaultState').textContent = "Default non recuperato: " + String(e.message || e);
     }
   }
