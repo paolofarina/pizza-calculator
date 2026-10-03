@@ -204,7 +204,22 @@ const YEAST_TABLE = {
       method: "POST",
       body: body
     });
-    const data = JSON.parse(await res.text());
+
+    const raw = await res.text();
+    let data;
+
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      // Apps Script può aver già eseguito la POST ma fallire nel redirect
+      // ContentService verso script.googleusercontent.com. Per le scritture
+      // non trasformiamo questo caso in un falso "salvataggio fallito".
+      if (action === "save") {
+        return { ok: true, response_unconfirmed: true };
+      }
+      throw new Error("Risposta backend non leggibile");
+    }
+
     if (!data.ok) throw new Error(data.error || "Operazione fallita");
     return data;
   }
@@ -375,11 +390,17 @@ const YEAST_TABLE = {
 
       if (btn) btn.textContent = "✓ Salvato";
       if ($('saveState')) {
-        $('saveState').textContent = selectedEmoji === "⏳"
-          ? "Salvato. Potrai valutarlo dopo aprendo questo impasto dallo Storico."
-          : "Impasto salvato correttamente.";
+        if (data.response_unconfirmed) {
+          $('saveState').textContent = selectedEmoji === "⏳"
+            ? "Salvataggio inviato. Potrai valutarlo dopo dallo Storico."
+            : "Salvataggio inviato.";
+        } else {
+          $('saveState').textContent = selectedEmoji === "⏳"
+            ? "Salvato. Potrai valutarlo dopo aprendo questo impasto dallo Storico."
+            : "Impasto salvato correttamente.";
+        }
       }
-      if ($('who')) $('who').textContent = data.email;
+      if ($('who') && data.email) $('who').textContent = data.email;
       if ($('commento')) $('commento').value = "";
       closeSavePanel();
     } catch (e) {
