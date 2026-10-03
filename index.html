@@ -84,8 +84,8 @@
 
       <article id="out" class="resultBox"></article>
 
-      <div class="defaultRow">
-        <button id="setDefaultBtn" type="button" class="secondary">⭐ Imposta come default</button>
+      <div id="defaultRow" class="defaultRow" style="display:none;">
+        <button id="setDefaultBtn" type="button" class="secondary">⭐ Imposta come mio default</button>
         <small id="defaultState" class="muted"></small>
       </div>
     </section>
@@ -97,12 +97,14 @@
       <!-- Login solo qui -->
       <div id="authBox">
         <div id="loggedOut">
-          <p class="muted">Per salvare serve il login.</p>
+          <p id="authState" class="muted">Tentativo di recupero della sessione Google...</p>
 
           <div id="g_id_onload"
                data-client_id=""
                data-callback="onGoogleCredential"
-               data-auto_select="false">
+               data-auto_prompt="true"
+               data-auto_select="true"
+               data-moment_callback="onGooglePromptMoment">
           </div>
           <div class="g_id_signin" data-type="standard"></div>
         </div>
