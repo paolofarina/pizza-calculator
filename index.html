@@ -29,16 +29,12 @@
       <h1>Pizza calculator</h1>
     </header>
 
-    <!-- BLOCCO B: calcolo 
-    <section class="box">
-      <h2>Calcolo impasto</h2>-->
-
+    <section id="calculatorView" class="calculatorView">
       <div class="grid">
         <label>
           Panetti
           <input id="panetti" type="number" min="1" step="1" value="3">
         </label>
-
         <label>
           Peso panetto (g)
           <input id="peso_panetto" type="number" min="100" step="10" value="250">
@@ -50,7 +46,6 @@
           Idratazione (%)
           <input id="idratazione" type="number" min="50" max="90" step="0.5" value="75">
         </label>
-
         <label>
           Temperatura (°C)
           <input id="temp" type="number" min="18" max="30" step="1" value="20">
@@ -61,19 +56,17 @@
         <label>
           Ore lievitazione
           <select id="fascia_ore">
-<option value="4-5">4-5</option>
-<option value="6-8" selected>6-8</option>
-<option value="9-12">9-12</option>
-<option value="12-16">12-16</option>
-<option value="17-24">17-24</option>
+            <option value="4-5">4-5</option>
+            <option value="6-8" selected>6-8</option>
+            <option value="9-12">9-12</option>
+            <option value="12-16">12-16</option>
+            <option value="17-24">17-24</option>
           </select>
         </label>
-
         <label>
           Sale (%) (1,6–2,2)
           <input id="sale_pct" type="number" min="1.6" max="2.2" step="0.1" value="1.8">
         </label>
-
         <label>
           Olio (%)
           <input id="olio_pct" type="number" min="0" max="10" step="0.5" value="2">
@@ -81,61 +74,45 @@
       </div>
 
       <small id="calcState" class="muted"></small>
-
       <article id="out" class="resultBox"></article>
 
-      <div id="defaultRow" class="defaultRow" style="display:none;">
-        <button id="setDefaultBtn" type="button" class="secondary">⭐ Imposta come mio default</button>
-        <small id="defaultState" class="muted"></small>
+      <div id="loggedOut" class="authCompact">
+        <span id="authState" class="muted">Tentativo di recupero della sessione Google...</span>
+        <div id="g_id_onload"
+             data-client_id=""
+             data-callback="onGoogleCredential"
+             data-auto_prompt="true"
+             data-auto_select="true"
+             data-moment_callback="onGooglePromptMoment"></div>
+        <div class="g_id_signin" data-type="standard"></div>
       </div>
-    </section>
 
-    <!-- BLOCCO C: salvataggio/diario -->
-    <section class="box">
-      <h2>Salva calcolo</h2>
-
-      <!-- Login solo qui -->
-      <div id="authBox">
-        <div id="loggedOut">
-          <p id="authState" class="muted">Tentativo di recupero della sessione Google...</p>
-
-          <div id="g_id_onload"
-               data-client_id=""
-               data-callback="onGoogleCredential"
-               data-auto_prompt="true"
-               data-auto_select="true"
-               data-moment_callback="onGooglePromptMoment">
-          </div>
-          <div class="g_id_signin" data-type="standard"></div>
+      <div id="loggedIn" style="display:none;">
+        <div class="actionBar">
+          <button id="setDefaultBtn" type="button" class="secondary">⭐ Default</button>
+          <button id="saveBtn" type="button" class="contrast" disabled>💾 Salva</button>
+          <button id="openHistoryBtn" type="button" class="secondary" disabled>📚 Storico</button>
         </div>
 
-        <div id="loggedIn" style="display:none;">
-          <div class="saveRow">
-            <button id="saveBtn" class="contrast" disabled>Salva questo impasto</button>
-            <small id="who" class="muted"></small>
-          </div>
+        <div class="actionFeedback">
+          <small id="defaultState" class="muted"></small>
+          <small id="saveState" class="muted"></small>
+          <small id="who" class="muted"></small>
+        </div>
 
+        <div id="savePanel" class="savePanel">
           <div class="emojiRow" aria-label="Esito">
             <button type="button" class="emojiBtn" data-emoji="⏳" aria-label="Da valutare" title="Da valutare">⏳</button>
-            <button type="button" class="emojiBtn" data-emoji="😍" aria-label="Fantastico">😍</button>
-            <button type="button" class="emojiBtn" data-emoji="😐" aria-label="Ok">😐</button>
-            <button type="button" class="emojiBtn" data-emoji="🤬" aria-label="Male">🤬</button>
+            <button type="button" class="emojiBtn" data-emoji="😍" aria-label="Fantastico" title="Fantastico">😍</button>
+            <button type="button" class="emojiBtn" data-emoji="😐" aria-label="Ok" title="Ok">😐</button>
+            <button type="button" class="emojiBtn" data-emoji="🤬" aria-label="Male" title="Male">🤬</button>
           </div>
-          <input type="hidden" id="emoji" value="⏳" />
-
+          <input type="hidden" id="emoji" value="⏳">
           <label>
             Commento (opzionale)
-            <textarea id="commento" rows="3" placeholder="Note..."></textarea>
+            <textarea id="commento" rows="2" placeholder="Note..."></textarea>
           </label>
-          <hr>
-<div class="saveRow">
-  <button id="openHistoryBtn" type="button" class="secondary" disabled>📚 Storico</button>
-  <small class="muted">Lo storico mostra solo i tuoi salvataggi.</small>
-</div>
-
         </div>
-
-        <small id="saveState" class="muted"></small>
       </div>
     </section>
 
