@@ -2,13 +2,15 @@ const SHEET_NAME = 'LOG_ESPERIMENTI';
 const CLIENT_ID = '13329073477-55053i7d2okr1cb10d7h3qfl3fq67059.apps.googleusercontent.com';
 const PREFS_SHEET_NAME = 'PREFERENZE';
 
-function doGet() {
+function doGet(e) {
+  const nonce = (e && e.parameter && e.parameter.nonce) ? String(e.parameter.nonce) : '';
   return HtmlService
-    .createHtmlOutput(bridgeHtml_())
+    .createHtmlOutput(bridgeHtml_(nonce))
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function bridgeHtml_() {
+function bridgeHtml_(nonce) {
+  const nonceJson = JSON.stringify(String(nonce || ''));
   return `<!doctype html>
 <html>
 <head>
@@ -19,8 +21,10 @@ function bridgeHtml_() {
 <script>
 (function () {
   var PARENT_ORIGIN = 'https://paolofarina.github.io';
+  var BRIDGE_NONCE = ${nonceJson};
 
   function send(message) {
+    message.nonce = BRIDGE_NONCE;
     window.top.postMessage(message, PARENT_ORIGIN);
   }
 
@@ -29,6 +33,7 @@ function bridgeHtml_() {
 
     var msg = event.data || {};
     if (msg.source !== 'pizza-parent' || msg.type !== 'request' || !msg.id) return;
+    if (!BRIDGE_NONCE || msg.nonce !== BRIDGE_NONCE) return;
 
     var request = JSON.stringify({
       action: msg.action || '',
