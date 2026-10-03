@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pizza Calculator</title>
+  <title>Pizza in teglia · Calculator</title>
 
   <!-- PicoCSS (gratis) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 
   <!-- Tuo CSS (solo override leggeri) -->
-  <link rel="stylesheet" href="./css/style.css?v=20261003-9" />
+  <link rel="stylesheet" href="./css/style.css?v=20261003-10" />
 
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -20,7 +20,7 @@
       ENDPOINT: "https://script.google.com/macros/s/AKfycbzRxFjumulVF6OaqirR-YdYW_2MT2Gg2Dc6jLDw6PYQ5Phw3ghh7Jrg6kcheUBGpjybKw/exec",
       CLIENT_ID: "13329073477-55053i7d2okr1cb10d7h3qfl3fq67059.apps.googleusercontent.com",
       GA_ID: "G-2S7C3L5YR7",
-      BUILD: "20261003-9"
+      BUILD: "20261003-10"
     };
   </script>
 </head>
@@ -28,7 +28,8 @@
 <body>
   <main class="container">
     <header class="appHeader">
-      <h1>Pizza calculator</h1>
+      <h1>Pizza in teglia · Calculator</h1>
+      <p class="appIntro">Imposta qui i parametri per ottenere le dosi dell'impasto che andrai a preparare.</p>
     </header>
 
     <section id="calculatorView" class="calculatorView">
@@ -66,11 +67,11 @@
           </select>
         </label>
         <label>
-          Sale (%) (1,6–2,2)
+          Sale (%) <small>(consigliato 1,6–2,2%)</small>
           <input id="sale_pct" type="number" min="1.6" max="2.2" step="0.1" value="1.8">
         </label>
         <label>
-          Olio (%)
+          Olio (%) <small>(consigliato 1–3%)</small>
           <input id="olio_pct" type="number" min="0" max="10" step="0.5" value="2">
         </label>
       </div>
@@ -211,10 +212,10 @@
     </div>
 
     <footer class="appFooter">
-      <small class="muted">v0 · build <span id="buildVersion">20261003-9</span> — calcolo in browser, salvataggio su Sheets</small>
+      <small class="muted">v0 · build <span id="buildVersion">20261003-10</span> — calcolo in browser, salvataggio su Sheets</small>
     </footer>
   </main>
 
-  <script src="./js/app.js?v=20261003-9"></script>
+  <script src="./js/app.js?v=20261003-10"></script>
 </body>
 </html>
