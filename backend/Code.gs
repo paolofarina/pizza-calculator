@@ -1,5 +1,6 @@
 const SHEET_NAME = 'LOG_ESPERIMENTI';
 const CLIENT_ID = '13329073477-55053i7d2okr1cb10d7h3qfl3fq67059.apps.googleusercontent.com';
+const PREFS_SHEET_NAME = 'PREFERENZE';
 
 function doPost(e) {
   try {
@@ -29,6 +30,17 @@ function doPost(e) {
     if (action === 'update') {
       const result = updateExperiment_(sh, email, p);
       return json_({ ok:true, email, id:result.id });
+    }
+
+    if (action === 'get_default') {
+      const prefSh = getPrefsSheet_(ss);
+      return json_({ ok:true, email, default:getDefaultForEmail_(prefSh, email) });
+    }
+
+    if (action === 'save_default') {
+      const prefSh = getPrefsSheet_(ss);
+      saveDefaultForEmail_(prefSh, email, p);
+      return json_({ ok:true, email });
     }
 
     const id = Utilities.getUuid();
@@ -120,6 +132,60 @@ function updateExperiment_(sh, email, p) {
   }
 
   throw new Error('Experiment not found');
+}
+
+function getPrefsSheet_(ss) {
+  let sh = ss.getSheetByName(PREFS_SHEET_NAME);
+  if (!sh) sh = ss.insertSheet(PREFS_SHEET_NAME);
+
+  const headers = ['email','updated_at','panetti','peso_panetto','idratazione','temp','fascia_ore','sale_pct','olio_pct'];
+  if (sh.getLastRow() === 0) sh.appendRow(headers);
+  return sh;
+}
+
+function getDefaultForEmail_(sh, email) {
+  const data = sh.getDataRange().getValues();
+  if (data.length < 2) return null;
+
+  const headers = data[0].map(h => String(h || '').trim());
+  const idxEmail = headers.indexOf('email');
+  const wanted = email.trim().toLowerCase();
+
+  for (let r = 1; r < data.length; r++) {
+    if (String(data[r][idxEmail] || '').trim().toLowerCase() !== wanted) continue;
+    const o = {};
+    for (let c = 0; c < headers.length; c++) o[headers[c]] = data[r][c];
+    delete o.email;
+    delete o.updated_at;
+    return o;
+  }
+  return null;
+}
+
+function saveDefaultForEmail_(sh, email, p) {
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => String(h || '').trim());
+  const idxEmail = headers.indexOf('email');
+  const wanted = email.trim().toLowerCase();
+  let targetRow = -1;
+
+  if (sh.getLastRow() >= 2) {
+    const emails = sh.getRange(2, idxEmail + 1, sh.getLastRow() - 1, 1).getValues();
+    for (let i = 0; i < emails.length; i++) {
+      if (String(emails[i][0] || '').trim().toLowerCase() === wanted) {
+        targetRow = i + 2;
+        break;
+      }
+    }
+  }
+
+  const row = [
+    email, new Date(),
+    p.panetti ?? '', p.peso_panetto ?? '', p.idratazione ?? '', p.temp ?? '',
+    p.fascia_ore ?? '', p.sale_pct ?? '', p.olio_pct ?? ''
+  ];
+
+  if (targetRow > 0) sh.getRange(targetRow, 1, 1, row.length).setValues([row]);
+  else sh.appendRow(row);
 }
 
 function verifyIdToken_(idToken) {
