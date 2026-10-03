@@ -2,6 +2,7 @@
   const cfg = window.APP_CONFIG || {};
   const ENDPOINT = cfg.ENDPOINT;
   const CLIENT_ID = cfg.CLIENT_ID;
+  const BUILD = cfg.BUILD || "unknown";
 
   const $ = (id) => document.getElementById(id);
 
@@ -747,6 +748,8 @@ const YEAST_TABLE = {
 
   // ===== Init =====
   document.addEventListener('DOMContentLoaded', () => {
+    if ($('buildVersion')) $('buildVersion').textContent = BUILD;
+
     // Stato auth iniziale
     if ($('loggedOut')) $('loggedOut').style.display = "block";
     if ($('loggedIn')) $('loggedIn').style.display = "none";
