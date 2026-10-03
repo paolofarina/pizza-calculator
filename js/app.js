@@ -110,7 +110,8 @@ const YEAST_TABLE = {
     ['panetti', 'peso_panetto', 'idratazione', 'temp', 'sale_pct', 'olio_pct']
       .forEach(key => {
         if ($(key) && i[key] !== undefined && i[key] !== null && i[key] !== "") {
-          $(key).value = i[key];
+          const normalized = String(i[key]).replace(',', '.');
+          $(key).value = normalized;
         }
       });
 
@@ -246,38 +247,65 @@ const YEAST_TABLE = {
   }
 
   // ===== Salvataggio =====
+  function closeSavePanel() {
+    if ($('savePanel')) $('savePanel').hidden = true;
+    if ($('ratingDetails')) $('ratingDetails').hidden = true;
+    if ($('emoji')) $('emoji').value = "⏳";
+    document.querySelectorAll('#savePanel .emojiBtn').forEach(b => b.classList.remove('active'));
+  }
+
+  function openSavePanel() {
+    if (!idToken) return alert("Devi fare login prima di salvare.");
+    const r = recalc();
+    if (!r) return;
+    if ($('savePanel')) $('savePanel').hidden = false;
+    if ($('saveState')) $('saveState').textContent = "";
+  }
+
   function markRecipeDirty() {
     if (!idToken || !$('saveBtn')) return;
     $('saveBtn').disabled = false;
     $('saveBtn').textContent = "💾 Salva";
     if ($('saveState')) $('saveState').textContent = "";
+    closeSavePanel();
   }
 
-  async function saveExperiment() {
+  async function saveExperiment(emoji = null) {
     if (!idToken) return alert("Devi fare login prima di salvare.");
     if (!ENDPOINT) return alert("ENDPOINT mancante in APP_CONFIG.");
 
     const r = recalc();
     if (!r) return;
 
+    const selectedEmoji = emoji || $('emoji')?.value || "⏳";
     const payload = {
       ...r.inputs,
       ...r.out,
-      emoji: $('emoji')?.value || "⏳",
-      commento: $('commento')?.value || ""
+      emoji: selectedEmoji,
+      commento: selectedEmoji === "⏳" ? "" : ($('commento')?.value || "")
     };
 
     const btn = $('saveBtn');
+    const confirmBtn = $('confirmSaveBtn');
+    const laterBtn = $('saveLaterBtn');
+
     try {
       if (btn) {
         btn.disabled = true;
         btn.textContent = "Salvataggio…";
       }
-      if ($('saveState')) $('saveState').textContent = "Sto salvando questo impasto...";
+      if (confirmBtn) confirmBtn.disabled = true;
+      if (laterBtn) laterBtn.disabled = true;
+      if ($('saveState')) $('saveState').textContent = "Salvataggio in corso...";
+
       const data = await apiAction("save", payload);
+
       if (btn) btn.textContent = "✓ Salvato";
-      if ($('saveState')) $('saveState').textContent = "Impasto salvato correttamente.";
+      if ($('saveState')) $('saveState').textContent =
+        selectedEmoji === "⏳" ? "Impasto salvato · da valutare." : "Impasto salvato correttamente.";
       if ($('who')) $('who').textContent = data.email;
+      if ($('commento')) $('commento').value = "";
+      closeSavePanel();
     } catch (e) {
       const message = String(e.message || e);
       console.error("SAVE error:", e);
@@ -286,24 +314,23 @@ const YEAST_TABLE = {
         btn.textContent = "💾 Salva";
       }
       if ($('saveState')) $('saveState').textContent = "Errore salvataggio: " + message;
+    } finally {
+      if (confirmBtn) confirmBtn.disabled = false;
+      if (laterBtn) laterBtn.disabled = false;
     }
   }
 
-  function setupEmojiToggle() {
-    const buttons = document.querySelectorAll('.emojiBtn');
-    if (!buttons.length || !$('emoji')) return;
-
+  function setupSaveFlow() {
+    const buttons = document.querySelectorAll('#savePanel .emojiBtn');
     const setActive = (emoji) => {
       buttons.forEach(b => b.classList.toggle('active', b.dataset.emoji === emoji));
-      $('emoji').value = emoji;
+      if ($('emoji')) $('emoji').value = emoji;
+      if ($('ratingDetails')) $('ratingDetails').hidden = false;
     };
 
-    buttons.forEach(btn => btn.addEventListener('click', () => {
-      setActive(btn.dataset.emoji);
-      markRecipeDirty();
-    }));
-
-    setActive("⏳");
+    buttons.forEach(btn => btn.addEventListener('click', () => setActive(btn.dataset.emoji)));
+    $('saveLaterBtn')?.addEventListener('click', () => saveExperiment("⏳"));
+    $('confirmSaveBtn')?.addEventListener('click', () => saveExperiment());
   }
 
   // ===== Storico: view switching =====
@@ -332,9 +359,6 @@ const YEAST_TABLE = {
       });
       const text = await res.text();
       data = JSON.parse(text);
-      console.log("HISTORY raw response:", data);
-      console.log("HISTORY items length:", (data.items || []).length);
-
     } catch (e) {
       if ($('historyState')) $('historyState').textContent = "Errore: " + String(e);
       return;
@@ -528,7 +552,7 @@ const YEAST_TABLE = {
     if ($('loggedOut')) $('loggedOut').style.display = "block";
     if ($('loggedIn')) $('loggedIn').style.display = "none";
 
-    setupEmojiToggle();
+    setupSaveFlow();
 
     if ($('fascia_ore') && !YEAST_TABLE.bands.includes($('fascia_ore').value)) {
       $('fascia_ore').value = "6-8";
@@ -541,13 +565,11 @@ const YEAST_TABLE = {
         markRecipeDirty();
       }));
 
-    $('commento')?.addEventListener('input', markRecipeDirty);
-
     // Default personale
     $('setDefaultBtn')?.addEventListener('click', saveDefault);
 
-    // Salvataggio
-    $('saveBtn')?.addEventListener('click', saveExperiment);
+    // Salvataggio: apre le opzioni di valutazione
+    $('saveBtn')?.addEventListener('click', openSavePanel);
 
     // Storico: apri/chiudi
     $('openHistoryBtn')?.addEventListener('click', async () => {
