@@ -586,3 +586,38 @@ main.container {
 .inlineHelpBtn:focus {
   color: var(--pico-primary-hover, #015887);
 }
+
+
+/* --- Forma teglia come tab --- */
+.panettoShapeChoices {
+  gap: 0;
+  border-bottom: 1px solid var(--muted-border-color);
+}
+
+.panettoShapeChoices button {
+  position: relative;
+  margin: 0;
+  padding: 0.55rem 0.75rem 0.65rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font-weight: 500;
+}
+
+.panettoShapeChoices button:hover,
+.panettoShapeChoices button:focus {
+  background: transparent;
+  box-shadow: none;
+}
+
+.panettoShapeChoices button.active {
+  border: 0;
+  border-bottom: 3px solid var(--pico-primary, #0172ad);
+  background: transparent;
+  box-shadow: none;
+  color: var(--pico-primary, #0172ad);
+  font-weight: 700;
+}
