@@ -33,7 +33,6 @@ const YEAST_TABLE = {
 
     if ($('loggedOut')) $('loggedOut').style.display = "none";
     if ($('loggedIn')) $('loggedIn').style.display = "block";
-    if ($('defaultRow')) $('defaultRow').style.display = "flex";
     if ($('saveBtn')) $('saveBtn').disabled = false;
     if ($('openHistoryBtn')) $('openHistoryBtn').disabled = false;
     if ($('who')) $('who').textContent = "Sessione Google recuperata";
@@ -156,6 +155,8 @@ const YEAST_TABLE = {
     try {
       if ($('defaultState')) $('defaultState').textContent = "Salvataggio default...";
       await apiAction("save_default", r.inputs);
+      const check = await apiAction("get_default");
+      if (check.default) applyInputsToUI(check.default);
       if ($('defaultState')) $('defaultState').textContent = "Mio default salvato ✓";
     } catch (e) {
       if ($('defaultState')) $('defaultState').textContent = "Errore default: " + String(e.message || e);
@@ -249,6 +250,13 @@ const YEAST_TABLE = {
   }
 
   // ===== Salvataggio =====
+  function markRecipeDirty() {
+    if (!idToken || !$('saveBtn')) return;
+    $('saveBtn').disabled = false;
+    $('saveBtn').textContent = "💾 Salva";
+    if ($('saveState')) $('saveState').textContent = "";
+  }
+
   async function saveExperiment() {
     if (!idToken) return alert("Devi fare login prima di salvare.");
     if (!ENDPOINT) return alert("ENDPOINT mancante in APP_CONFIG.");
@@ -263,14 +271,24 @@ const YEAST_TABLE = {
       commento: $('commento')?.value || ""
     };
 
+    const btn = $('saveBtn');
     try {
-      if ($('saveState')) $('saveState').textContent = "Salvataggio...";
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Salvataggio…";
+      }
+      if ($('saveState')) $('saveState').textContent = "Sto salvando questo impasto...";
       const data = await apiAction("save", payload);
-      if ($('saveState')) $('saveState').textContent = "Salvato ✅ come " + data.email;
+      if (btn) btn.textContent = "✓ Salvato";
+      if ($('saveState')) $('saveState').textContent = "Impasto salvato correttamente.";
       if ($('who')) $('who').textContent = data.email;
     } catch (e) {
       const message = String(e.message || e);
       console.error("SAVE error:", e);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "💾 Salva";
+      }
       if ($('saveState')) $('saveState').textContent = "Errore salvataggio: " + message;
     }
   }
@@ -284,25 +302,18 @@ const YEAST_TABLE = {
       $('emoji').value = emoji;
     };
 
-    buttons.forEach(btn => btn.addEventListener('click', () => setActive(btn.dataset.emoji)));
+    buttons.forEach(btn => btn.addEventListener('click', () => {
+      setActive(btn.dataset.emoji);
+      markRecipeDirty();
+    }));
 
     setActive("⏳");
   }
 
   // ===== Storico: view switching =====
   function showHistoryView(show) {
-    const hv = $('historyView');
-    const allBoxes = document.querySelectorAll('main.container > section.box');
-
-    allBoxes.forEach(sec => sec.style.display = "none");
-
-    if (show) {
-      if (hv) hv.style.display = "block";
-    } else {
-      allBoxes.forEach(sec => {
-        if (sec.id !== 'historyView') sec.style.display = "block";
-      });
-    }
+    if ($('calculatorView')) $('calculatorView').style.display = show ? "none" : "block";
+    if ($('historyView')) $('historyView').style.display = show ? "block" : "none";
     window.scrollTo({ top: 0, behavior: "instant" });
   }
 
@@ -321,8 +332,7 @@ const YEAST_TABLE = {
     try {
       const res = await fetch(ENDPOINT, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: body.toString()
+        body: body
       });
       const text = await res.text();
       data = JSON.parse(text);
@@ -530,7 +540,12 @@ const YEAST_TABLE = {
 
     // Ricalcolo live
     ['panetti', 'peso_panetto', 'idratazione', 'temp', 'fascia_ore', 'sale_pct', 'olio_pct']
-      .forEach(id => $(id)?.addEventListener('input', recalc));
+      .forEach(id => $(id)?.addEventListener('input', () => {
+        recalc();
+        markRecipeDirty();
+      }));
+
+    $('commento')?.addEventListener('input', markRecipeDirty);
 
     // Default personale
     $('setDefaultBtn')?.addEventListener('click', saveDefault);
