@@ -235,3 +235,48 @@ main.container {
     font-size: 0.9rem;
   }
 }
+
+
+/* --- Flusso Salva contestuale --- */
+.savePanel[hidden],
+#ratingDetails[hidden] {
+  display: none !important;
+}
+
+.savePanel {
+  width: calc((100% - 1.2rem) / 3);
+  margin-left: calc((100% - 1.2rem) / 3 + 0.6rem);
+  padding: 0.75rem;
+}
+
+.saveChoices {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  margin-top: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.saveChoices button {
+  margin: 0;
+}
+
+#saveLaterBtn {
+  width: auto;
+  min-height: 3rem;
+}
+
+#ratingDetails {
+  margin-top: 0.65rem;
+}
+
+#confirmSaveBtn {
+  margin-bottom: 0;
+}
+
+@media (max-width: 700px) {
+  .savePanel {
+    width: 100%;
+    margin-left: 0;
+  }
+}
