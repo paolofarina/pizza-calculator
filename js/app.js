@@ -6,6 +6,7 @@
   const $ = (id) => document.getElementById(id);
 
   let idToken = null;
+  let cachedDefaultLoaded = false;
 
   const CACHE_KEY = "pizzaCalculatorCacheV1";
   const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -43,12 +44,13 @@ const YEAST_TABLE = {
     if ($('loggedIn')) $('loggedIn').style.display = "block";
     if ($('saveBtn')) $('saveBtn').disabled = false;
     if ($('openHistoryBtn')) $('openHistoryBtn').disabled = false;
-    if ($('who')) $('who').textContent = "Sessione Google recuperata";
+    const googleEmail = emailFromGoogleCredential(response.credential);
+    if ($('who')) $('who').textContent = googleEmail || "Sessione Google recuperata";
 
-    await Promise.all([
-      loadMyDefault(),
-      checkLatestPendingRating()
-    ]);
+    // Con Apps Script/ContentService preferiamo evitare richieste parallele:
+    // la risposta passa da redirect one-time su googleusercontent.
+    await loadMyDefault();
+    await checkLatestPendingRating();
   };
 
   window.onGooglePromptMoment = function (notification) {
@@ -84,6 +86,20 @@ const YEAST_TABLE = {
   function fmtCell(v) {
     if (v === null || v === undefined || v === "") return "—";
     return String(v);
+  }
+
+  function emailFromGoogleCredential(credential) {
+    try {
+      const part = String(credential || "").split(".")[1];
+      if (!part) return "";
+      const normalized = part.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+      const bytes = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+      const payload = JSON.parse(new TextDecoder().decode(bytes));
+      return String(payload.email || "");
+    } catch {
+      return "";
+    }
   }
 
   // ===== Calcolo =====
@@ -184,6 +200,7 @@ const YEAST_TABLE = {
 
       // Solo cache UI: non abilita login, storico o scritture.
       applyInputsToUI(cached.default);
+      cachedDefaultLoaded = true;
       return true;
     } catch (e) {
       clearDefaultCache();
@@ -251,6 +268,7 @@ const YEAST_TABLE = {
       if (data.default) {
         applyInputsToUI(data.default);
         saveDefaultCache(data.email, data.default);
+        cachedDefaultLoaded = false;
         if ($('defaultState')) $('defaultState').textContent = "Mio default caricato";
       } else {
         // Se l'account verificato non ha un default, non teniamo quello
@@ -261,7 +279,12 @@ const YEAST_TABLE = {
       }
       if ($('who') && data.email) $('who').textContent = data.email;
     } catch (e) {
-      if ($('defaultState')) $('defaultState').textContent = "Default non recuperato: " + String(e.message || e);
+      if ($('defaultState')) {
+        $('defaultState').textContent = cachedDefaultLoaded
+          ? "Mio default caricato"
+          : "Default non recuperato";
+      }
+      console.debug("[PizzaDebug] sincronizzazione default fallita", e);
     }
   }
 
