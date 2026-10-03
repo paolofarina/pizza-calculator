@@ -7,6 +7,18 @@
 
   let idToken = null;
 
+  const CACHE_KEY = "pizzaCalculatorCacheV1";
+  const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+  const GENERIC_DEFAULT = {
+    panetti: 3,
+    peso_panetto: 250,
+    idratazione: 75,
+    temp: 20,
+    fascia_ore: "6-8",
+    sale_pct: 1.8,
+    olio_pct: 2
+  };
+
   // Tabella lievito fresco (% su farina)
 const YEAST_TABLE = {
   temps: [18, 20, 22, 24, 26, 28, 30],
@@ -130,6 +142,56 @@ const YEAST_TABLE = {
     recalc();
   }
 
+  function saveDefaultCache(email, values) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        version: 1,
+        email: String(email || ""),
+        saved_at: Date.now(),
+        default: values
+      }));
+    } catch (e) {
+      console.debug("[PizzaDebug] cache default non disponibile", e);
+    }
+  }
+
+  function clearDefaultCache() {
+    try {
+      localStorage.removeItem(CACHE_KEY);
+    } catch (e) {
+      console.debug("[PizzaDebug] impossibile pulire cache default", e);
+    }
+  }
+
+  function loadCachedDefault() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return false;
+
+      const cached = JSON.parse(raw);
+      const age = Date.now() - Number(cached.saved_at || 0);
+
+      if (
+        cached.version !== 1 ||
+        !cached.default ||
+        !Number.isFinite(age) ||
+        age < 0 ||
+        age > CACHE_TTL_MS
+      ) {
+        clearDefaultCache();
+        return false;
+      }
+
+      // Solo cache UI: non abilita login, storico o scritture.
+      applyInputsToUI(cached.default);
+      return true;
+    } catch (e) {
+      clearDefaultCache();
+      console.debug("[PizzaDebug] cache default non leggibile", e);
+      return false;
+    }
+  }
+
   async function apiAction(action, payload = {}) {
     if (!idToken) throw new Error("Login Google necessario");
 
@@ -156,7 +218,10 @@ const YEAST_TABLE = {
       if ($('defaultState')) $('defaultState').textContent = "Salvataggio default...";
       await apiAction("save_default", r.inputs);
       const check = await apiAction("get_default");
-      if (check.default) applyInputsToUI(check.default);
+      if (check.default) {
+        applyInputsToUI(check.default);
+        saveDefaultCache(check.email, check.default);
+      }
       if ($('defaultState')) $('defaultState').textContent = "Mio default salvato ✓";
     } catch (e) {
       if ($('defaultState')) $('defaultState').textContent = "Errore default: " + String(e.message || e);
@@ -170,8 +235,13 @@ const YEAST_TABLE = {
       const data = await apiAction("get_default");
       if (data.default) {
         applyInputsToUI(data.default);
+        saveDefaultCache(data.email, data.default);
         if ($('defaultState')) $('defaultState').textContent = "Mio default caricato";
       } else {
+        // Se l'account verificato non ha un default, non teniamo quello
+        // eventualmente cached di un altro profilo/browser.
+        clearDefaultCache();
+        applyInputsToUI(GENERIC_DEFAULT);
         if ($('defaultState')) $('defaultState').textContent = "Nessun default personale salvato";
       }
       if ($('who') && data.email) $('who').textContent = data.email;
@@ -666,7 +736,9 @@ const YEAST_TABLE = {
     // Dialog close
     $('dlgCloseBtn')?.addEventListener('click', () => $('historyDialog')?.close());
 
-    recalc();
+    // Mostra subito l'ultimo default verificato (max 24h) mentre Google
+    // recupera la sessione e il backend sincronizza i dati reali.
+    if (!loadCachedDefault()) recalc();
 
     // Se GIS non restituisce automaticamente una credenziale, il calculator
     // resta utilizzabile e il pulsante Google rimane disponibile.
