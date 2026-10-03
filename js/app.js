@@ -67,22 +67,25 @@ const YEAST_TABLE = {
   }
 
   // ===== Calcolo =====
-  function yeastPercent(tempC, band) {
-    const { temps, bands, values } = YEAST_TABLE;
-    const j = bands.indexOf(band);
-    if (j < 0) throw new Error("Fascia ore non valida: " + band);
+ function yeastPercent(tempC, band) {
+  const { temps, bands, values } = YEAST_TABLE;
 
-    const t = clamp(tempC, temps[0], temps[temps.length - 1]);
+  const j = bands.indexOf(band);
+  if (j < 0) throw new Error("Fascia ore non valida: " + band);
 
-    let i = 0;
-    while (i < temps.length - 1 && t > temps[i + 1]) i++;
+  const t = clamp(tempC, temps[0], temps[temps.length - 1]);
 
-    const t0 = temps[i], t1 = temps[i + 1] ?? temps[i];
-    const y0 = values[i][j];
-    const y1 = (i < temps.length - 1) ? values[i + 1][j] : values[i][j];
+  let i = 0;
+  while (i < temps.length - 1 && t > temps[i + 1]) i++;
 
-    return interpLinear(t, t0, y0, t1, y1);
-  }
+  const t0 = temps[i];
+  const t1 = temps[i + 1] ?? temps[i];
+
+  const y0 = values[t0][j];
+  const y1 = values[t1][j];
+
+  return interpLinear(t, t0, y0, t1, y1);
+}
 
   function getInputsFromUI() {
     return {
