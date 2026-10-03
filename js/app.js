@@ -111,10 +111,23 @@ const YEAST_TABLE = {
 
   function applyInputsToUI(i) {
     if (!i) return;
-    ['panetti', 'peso_panetto', 'idratazione', 'temp', 'fascia_ore', 'sale_pct', 'olio_pct']
+
+    ['panetti', 'peso_panetto', 'idratazione', 'temp', 'sale_pct', 'olio_pct']
       .forEach(key => {
-        if ($(key) && i[key] !== undefined && i[key] !== null) $(key).value = i[key];
+        if ($(key) && i[key] !== undefined && i[key] !== null && i[key] !== "") {
+          $(key).value = i[key];
+        }
       });
+
+    if ($('fascia_ore')) {
+      const band = String(i.fascia_ore ?? "").trim();
+      if (YEAST_TABLE.bands.includes(band)) {
+        $('fascia_ore').value = band;
+      } else if (!YEAST_TABLE.bands.includes($('fascia_ore').value)) {
+        $('fascia_ore').value = "6-8";
+      }
+    }
+
     recalc();
   }
 
@@ -128,8 +141,7 @@ const YEAST_TABLE = {
 
     const res = await fetch(ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-      body: body.toString()
+      body: body
     });
     const data = JSON.parse(await res.text());
     if (!data.ok) throw new Error(data.error || "Operazione fallita");
@@ -415,8 +427,7 @@ const YEAST_TABLE = {
 
     const res = await fetch(ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-      body: body.toString()
+      body: body
     });
     const data = JSON.parse(await res.text());
     if (!data.ok) throw new Error(data.error || "Aggiornamento fallito");
@@ -512,6 +523,10 @@ const YEAST_TABLE = {
     if ($('loggedIn')) $('loggedIn').style.display = "none";
 
     setupEmojiToggle();
+
+    if ($('fascia_ore') && !YEAST_TABLE.bands.includes($('fascia_ore').value)) {
+      $('fascia_ore').value = "6-8";
+    }
 
     // Ricalcolo live
     ['panetti', 'peso_panetto', 'idratazione', 'temp', 'fascia_ore', 'sale_pct', 'olio_pct']
