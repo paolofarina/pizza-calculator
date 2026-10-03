@@ -299,7 +299,6 @@ const YEAST_TABLE = {
       { key: "lievito_secco_g", label: "Lievito secco (g)" },
       { key: "idratazione", label: "Idratazione (%)" },
       { key: "temp", label: "Temperatura (°C)" },
-      { key: "fascia_ore", label: "Ore" },
     ];
 
     const thCols = items.map((it, idx) => {
@@ -307,7 +306,10 @@ const YEAST_TABLE = {
       const date = formatTs(it.ts);
       return `
         <th class="historyCol" data-idx="${idx}">
-          <div class="historyMeta">${escapeHtml(emoji)} ${escapeHtml(date)}</div>
+          <div class="historyMeta">
+            <div class="historyReaction">${escapeHtml(emoji)}</div>
+            <div class="historyDate">${escapeHtml(date)}</div>
+          </div>
         </th>`;
     }).join("");
 
