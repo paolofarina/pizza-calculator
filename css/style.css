@@ -152,3 +152,86 @@
 .dialogActions button {
   margin-bottom: 0;
 }
+
+
+/* --- Layout compatto + barra azioni --- */
+main.container {
+  max-width: 960px;
+  padding-top: 0.65rem;
+}
+
+.appHeader {
+  margin-bottom: 0.5rem;
+}
+
+.appHeader h1 {
+  font-size: 1.65rem;
+}
+
+.calculatorView label {
+  margin-bottom: 0.45rem;
+}
+
+.calculatorView input,
+.calculatorView select,
+.calculatorView textarea {
+  margin-bottom: 0.35rem;
+}
+
+.resultBox {
+  padding: 0.75rem 1rem;
+  margin: 0.45rem 0 0.65rem;
+}
+
+.resultBox p {
+  margin-bottom: 0.35rem;
+}
+
+.actionBar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.actionBar button {
+  margin: 0;
+  min-height: 2.8rem;
+}
+
+.actionFeedback {
+  min-height: 1.4rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.1rem;
+}
+
+.savePanel {
+  margin-top: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--muted-border-color);
+  border-radius: 0.75rem;
+}
+
+.savePanel .emojiRow {
+  margin-top: 0;
+}
+
+.authCompact {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .actionBar {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.35rem;
+  }
+
+  .actionBar button {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+    font-size: 0.9rem;
+  }
+}
