@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 
   <!-- Tuo CSS (solo override leggeri) -->
-  <link rel="stylesheet" href="./css/style.css?v=20261003-2" />
+  <link rel="stylesheet" href="./css/style.css?v=20261003-3" />
 
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -145,6 +145,44 @@
   </div>
 </section>
 
+<dialog id="pendingRatingDialog">
+  <article>
+    <header class="dialogHeader">
+      <strong>⏳ Hai un impasto da valutare</strong>
+      <button aria-label="Close" rel="prev" id="pendingCloseBtn"></button>
+    </header>
+
+    <div id="pendingSummary"></div>
+
+    <div class="pendingRatingChoices" aria-label="Valutazione impasto">
+      <button type="button" class="saveChoiceBtn secondary pendingChoiceBtn" data-emoji="😍">
+        <span class="saveChoiceIcon">😍</span>
+        <span>Ottimo!</span>
+      </button>
+      <button type="button" class="saveChoiceBtn secondary pendingChoiceBtn" data-emoji="😐">
+        <span class="saveChoiceIcon">😐</span>
+        <span>Medio...</span>
+      </button>
+      <button type="button" class="saveChoiceBtn secondary pendingChoiceBtn" data-emoji="🤬">
+        <span class="saveChoiceIcon">🤬</span>
+        <span>Da rivedere!</span>
+      </button>
+    </div>
+
+    <label>
+      Commento (opzionale)
+      <textarea id="pendingCommento" rows="3" placeholder="Note..."></textarea>
+    </label>
+
+    <small id="pendingState" class="muted"></small>
+
+    <div class="dialogActions pendingActions">
+      <button type="button" id="pendingSaveBtn" class="contrast" disabled>Salva valutazione</button>
+      <button type="button" id="pendingLaterBtn" class="secondary">Più tardi</button>
+    </div>
+  </article>
+</dialog>
+
 <dialog id="historyDialog">
   <article>
     <header class="dialogHeader">
@@ -164,6 +202,6 @@
     </footer>
   </main>
 
-  <script src="./js/app.js?v=20261003-2"></script>
+  <script src="./js/app.js?v=20261003-3"></script>
 </body>
 </html>
