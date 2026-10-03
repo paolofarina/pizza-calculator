@@ -1,0 +1,172 @@
+const SHEET_NAME = 'LOG_ESPERIMENTI';
+const CLIENT_ID = '13329073477-55053i7d2okr1cb10d7h3qfl3fq67059.apps.googleusercontent.com';
+
+function doPost(e) {
+  try {
+    const action = (e.parameter && e.parameter.action) ? e.parameter.action : 'save';
+    const idToken = (e.parameter && e.parameter.id_token) ? e.parameter.id_token : '';
+    const payloadStr = (e.parameter && e.parameter.payload) ? e.parameter.payload : '{}';
+    const p = JSON.parse(payloadStr);
+
+    if (!idToken) return json_({ ok:false, error:'Missing id_token' });
+
+    const info = verifyIdToken_(idToken);
+    const email = info.email || '';
+    if (!email) return json_({ ok:false, error:'No email in token' });
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sh = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
+    ensureHeader_(sh);
+
+    if (action === 'list') {
+      ensureIds_(sh);
+      const limit = clampInt_(p.limit ?? 25, 1, 200);
+      const offset = clampInt_(p.offset ?? 0, 0, 100000);
+      const items = listForEmail_(sh, email, limit, offset);
+      return json_({ ok:true, email, items });
+    }
+
+    if (action === 'update') {
+      const result = updateExperiment_(sh, email, p);
+      return json_({ ok:true, email, id:result.id });
+    }
+
+    const id = Utilities.getUuid();
+    sh.appendRow([
+      new Date(), email,
+      p.panetti ?? '', p.peso_panetto ?? '', p.idratazione ?? '', p.temp ?? '', p.fascia_ore ?? '',
+      p.sale_pct ?? '', p.olio_pct ?? '',
+      p.farina_g ?? '', p.acqua_g ?? '', p.sale_g ?? '', p.olio_g ?? '', p.lievito_fresco_g ?? '', p.lievito_secco_g ?? '',
+      p.emoji ?? '⏳', p.voto ?? '', p.commento ?? '', id
+    ]);
+
+    return json_({ ok:true, email, id });
+  } catch (err) {
+    return json_({ ok:false, error:String(err) });
+  }
+}
+
+function ensureHeader_(sh) {
+  const expected = [
+    'ts','email',
+    'panetti','peso_panetto','idratazione','temp','fascia_ore',
+    'sale_pct','olio_pct',
+    'farina_g','acqua_g','sale_g','olio_g','lievito_fresco_g','lievito_secco_g',
+    'emoji','voto','commento','id'
+  ];
+
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(expected);
+    return;
+  }
+
+  const lastCol = Math.max(sh.getLastColumn(), 1);
+  const headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h || '').trim());
+
+  if (headers.indexOf('id') < 0) {
+    sh.getRange(1, lastCol + 1).setValue('id');
+  }
+}
+
+function ensureIds_(sh) {
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return;
+
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => String(h || '').trim());
+  const idxId = headers.indexOf('id');
+  if (idxId < 0) throw new Error('Colonna id non trovata');
+
+  const range = sh.getRange(2, idxId + 1, lastRow - 1, 1);
+  const values = range.getValues();
+  let changed = false;
+
+  for (let i = 0; i < values.length; i++) {
+    if (!String(values[i][0] || '').trim()) {
+      values[i][0] = Utilities.getUuid();
+      changed = true;
+    }
+  }
+  if (changed) range.setValues(values);
+}
+
+function updateExperiment_(sh, email, p) {
+  const id = String(p.id || '').trim();
+  if (!id) throw new Error('Missing experiment id');
+
+  ensureIds_(sh);
+
+  const data = sh.getDataRange().getValues();
+  const headers = data[0].map(h => String(h || '').trim());
+  const idxId = headers.indexOf('id');
+  const idxEmail = headers.indexOf('email');
+  const idxEmoji = headers.indexOf('emoji');
+  const idxCommento = headers.indexOf('commento');
+
+  if (idxId < 0 || idxEmail < 0 || idxEmoji < 0 || idxCommento < 0) {
+    throw new Error('Header sheet incompleto');
+  }
+
+  const wantedEmail = email.trim().toLowerCase();
+
+  for (let r = 1; r < data.length; r++) {
+    if (String(data[r][idxId] || '').trim() !== id) continue;
+
+    const rowEmail = String(data[r][idxEmail] || '').trim().toLowerCase();
+    if (rowEmail !== wantedEmail) throw new Error('Experiment does not belong to user');
+
+    sh.getRange(r + 1, idxEmoji + 1).setValue(p.emoji ?? '⏳');
+    sh.getRange(r + 1, idxCommento + 1).setValue(p.commento ?? '');
+    return { id };
+  }
+
+  throw new Error('Experiment not found');
+}
+
+function verifyIdToken_(idToken) {
+  const url = 'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken);
+  const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) {
+    throw new Error('Invalid token: ' + res.getContentText());
+  }
+  const info = JSON.parse(res.getContentText());
+
+  if (info.aud !== CLIENT_ID) throw new Error('Token aud mismatch');
+  if (info.email_verified !== 'true' && info.email_verified !== true) throw new Error('Email not verified');
+  return info;
+}
+
+function json_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function listForEmail_(sh, email, limit, offset) {
+  const data = sh.getDataRange().getValues();
+  if (data.length < 2) return [];
+
+  const headers = data[0].map(h => String(h || '').trim());
+  const rows = data.slice(1);
+  const idxEmail = headers.indexOf('email');
+  const idxTs = headers.indexOf('ts');
+  if (idxEmail < 0) return [];
+
+  const filtered = [];
+  for (const r of rows) {
+    const rowEmail = String(r[idxEmail] || '').trim().toLowerCase();
+    if (rowEmail !== email.trim().toLowerCase()) continue;
+
+    const o = {};
+    for (let i = 0; i < headers.length; i++) o[headers[i]] = r[i];
+    filtered.push(o);
+  }
+
+  if (idxTs >= 0) {
+    filtered.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+  }
+  return filtered.slice(offset, offset + limit);
+}
+
+function clampInt_(v, min, max) {
+  const n = parseInt(v, 10);
+  if (!Number.isFinite(n)) return min;
+  return Math.max(min, Math.min(max, n));
+}
