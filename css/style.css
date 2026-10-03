@@ -431,3 +431,15 @@ main.container {
     flex: 1;
   }
 }
+
+
+/* --- Chiarezza introduttiva --- */
+.appIntro {
+  margin: 0.15rem 0 0.75rem;
+  opacity: 0.8;
+}
+
+.calculatorView label > small {
+  font-weight: 400;
+  opacity: 0.75;
+}
