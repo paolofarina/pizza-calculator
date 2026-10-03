@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 
   <!-- Tuo CSS (solo override leggeri) -->
-  <link rel="stylesheet" href="./css/style.css?v=20261003-4" />
+  <link rel="stylesheet" href="./css/style.css?v=20261003-9" />
 
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -19,7 +19,8 @@
     window.APP_CONFIG = {
       ENDPOINT: "https://script.google.com/macros/s/AKfycbzRxFjumulVF6OaqirR-YdYW_2MT2Gg2Dc6jLDw6PYQ5Phw3ghh7Jrg6kcheUBGpjybKw/exec",
       CLIENT_ID: "13329073477-55053i7d2okr1cb10d7h3qfl3fq67059.apps.googleusercontent.com",
-      BUILD: "20261003-8"
+      GA_ID: "G-2S7C3L5YR7",
+      BUILD: "20261003-9"
     };
   </script>
 </head>
@@ -198,11 +199,22 @@
 
     
 
+    <div id="analyticsConsent" class="analyticsConsent" hidden>
+      <div>
+        <strong>Statistiche d'uso</strong>
+        <small>Posso usare Google Analytics per capire quali funzioni del Pizza Calculator vengono usate. Non invio email, commenti o dati degli impasti identificativi.</small>
+      </div>
+      <div class="analyticsConsentActions">
+        <button id="analyticsAcceptBtn" type="button" class="contrast">Accetta</button>
+        <button id="analyticsDeclineBtn" type="button" class="secondary">No grazie</button>
+      </div>
+    </div>
+
     <footer class="appFooter">
-      <small class="muted">v0 · build <span id="buildVersion">20261003-8</span> — calcolo in browser, salvataggio su Sheets</small>
+      <small class="muted">v0 · build <span id="buildVersion">20261003-9</span> — calcolo in browser, salvataggio su Sheets</small>
     </footer>
   </main>
 
-  <script src="./js/app.js?v=20261003-8"></script>
+  <script src="./js/app.js?v=20261003-9"></script>
 </body>
 </html>
