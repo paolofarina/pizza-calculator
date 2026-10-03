@@ -2,165 +2,60 @@ const SHEET_NAME = 'LOG_ESPERIMENTI';
 const CLIENT_ID = '13329073477-55053i7d2okr1cb10d7h3qfl3fq67059.apps.googleusercontent.com';
 const PREFS_SHEET_NAME = 'PREFERENZE';
 
-function doGet(e) {
-  const nonce = (e && e.parameter && e.parameter.nonce) ? String(e.parameter.nonce) : '';
-  return HtmlService
-    .createHtmlOutput(bridgeHtml_(nonce))
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
-
-function bridgeHtml_(nonce) {
-  const nonceJson = JSON.stringify(String(nonce || ''));
-  return `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Pizza Calculator Bridge</title>
-</head>
-<body>
-<script>
-(function () {
-  var PARENT_ORIGIN = 'https://paolofarina.github.io';
-  var BRIDGE_NONCE = ${nonceJson};
-
-  function send(message) {
-    message.nonce = BRIDGE_NONCE;
-    window.top.postMessage(message, PARENT_ORIGIN);
-  }
-
-  window.addEventListener('message', function (event) {
-    if (event.origin !== PARENT_ORIGIN) return;
-
-    var msg = event.data || {};
-    if (msg.source !== 'pizza-parent' || msg.type !== 'request' || !msg.id) return;
-    if (!BRIDGE_NONCE || msg.nonce !== BRIDGE_NONCE) return;
-
-    var request = JSON.stringify({
-      action: msg.action || '',
-      id_token: msg.id_token || '',
-      payload: msg.payload || {}
-    });
-
-    google.script.run
-      .withSuccessHandler(function (raw) {
-        try {
-          send({
-            source: 'pizza-bridge',
-            type: 'response',
-            id: msg.id,
-            data: JSON.parse(raw)
-          });
-        } catch (err) {
-          send({
-            source: 'pizza-bridge',
-            type: 'response',
-            id: msg.id,
-            error: 'Invalid bridge response'
-          });
-        }
-      })
-      .withFailureHandler(function (err) {
-        send({
-          source: 'pizza-bridge',
-          type: 'response',
-          id: msg.id,
-          error: (err && err.message) ? err.message : String(err || 'Bridge call failed')
-        });
-      })
-      .bridgeCall(request);
-  });
-
-  send({
-    source: 'pizza-bridge',
-    type: 'ready'
-  });
-})();
-<\/script>
-</body>
-</html>`;
-}
-
-function bridgeCall(requestJson) {
-  try {
-    const req = JSON.parse(requestJson || '{}');
-    const action = String(req.action || 'save');
-    const idToken = String(req.id_token || '');
-    const payload = req.payload || {};
-    return JSON.stringify(handleAction_(action, idToken, payload));
-  } catch (err) {
-    return JSON.stringify({ ok:false, error:String(err) });
-  }
-}
-
 function doPost(e) {
   try {
     const action = (e.parameter && e.parameter.action) ? e.parameter.action : 'save';
     const idToken = (e.parameter && e.parameter.id_token) ? e.parameter.id_token : '';
     const payloadStr = (e.parameter && e.parameter.payload) ? e.parameter.payload : '{}';
-    const payload = JSON.parse(payloadStr);
-    return json_(handleAction_(action, idToken, payload));
+    const p = JSON.parse(payloadStr);
+
+    if (!idToken) return json_({ ok:false, error:'Missing id_token' });
+
+    const info = verifyIdToken_(idToken);
+    const email = info.email || '';
+    if (!email) return json_({ ok:false, error:'No email in token' });
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sh = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
+    ensureHeader_(sh);
+
+    if (action === 'list') {
+      ensureIds_(sh);
+      const limit = clampInt_(p.limit ?? 25, 1, 200);
+      const offset = clampInt_(p.offset ?? 0, 0, 100000);
+      const items = listForEmail_(sh, email, limit, offset);
+      return json_({ ok:true, email, items });
+    }
+
+    if (action === 'update') {
+      const result = updateExperiment_(sh, email, p);
+      return json_({ ok:true, email, id:result.id });
+    }
+
+    if (action === 'get_default') {
+      const prefSh = getPrefsSheet_(ss);
+      return json_({ ok:true, email, default:getDefaultForEmail_(prefSh, email) });
+    }
+
+    if (action === 'save_default') {
+      const prefSh = getPrefsSheet_(ss);
+      saveDefaultForEmail_(prefSh, email, p);
+      return json_({ ok:true, email });
+    }
+
+    const id = Utilities.getUuid();
+    sh.appendRow([
+      new Date(), email,
+      p.panetti ?? '', p.peso_panetto ?? '', p.idratazione ?? '', p.temp ?? '', p.fascia_ore ?? '',
+      p.sale_pct ?? '', p.olio_pct ?? '',
+      p.farina_g ?? '', p.acqua_g ?? '', p.sale_g ?? '', p.olio_g ?? '', p.lievito_fresco_g ?? '', p.lievito_secco_g ?? '',
+      p.emoji ?? '⏳', p.voto ?? '', p.commento ?? '', id
+    ]);
+
+    return json_({ ok:true, email, id });
   } catch (err) {
     return json_({ ok:false, error:String(err) });
   }
-}
-
-function handleAction_(action, idToken, p) {
-  if (!idToken) throw new Error('Missing id_token');
-
-  const info = verifyIdToken_(idToken);
-  const email = info.email || '';
-  if (!email) throw new Error('No email in token');
-
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
-  ensureHeader_(sh);
-
-  if (action === 'bootstrap') {
-    ensureIds_(sh);
-    const prefSh = getPrefsSheet_(ss);
-    const latestItems = listForEmail_(sh, email, 1, 0);
-    return {
-      ok: true,
-      email,
-      default: getDefaultForEmail_(prefSh, email),
-      latest: latestItems.length ? latestItems[0] : null
-    };
-  }
-
-  if (action === 'list') {
-    ensureIds_(sh);
-    const limit = clampInt_(p.limit ?? 25, 1, 200);
-    const offset = clampInt_(p.offset ?? 0, 0, 100000);
-    const items = listForEmail_(sh, email, limit, offset);
-    return { ok:true, email, items };
-  }
-
-  if (action === 'update') {
-    const result = updateExperiment_(sh, email, p);
-    return { ok:true, email, id:result.id };
-  }
-
-  if (action === 'get_default') {
-    const prefSh = getPrefsSheet_(ss);
-    return { ok:true, email, default:getDefaultForEmail_(prefSh, email) };
-  }
-
-  if (action === 'save_default') {
-    const prefSh = getPrefsSheet_(ss);
-    saveDefaultForEmail_(prefSh, email, p);
-    return { ok:true, email };
-  }
-
-  const id = Utilities.getUuid();
-  sh.appendRow([
-    new Date(), email,
-    p.panetti ?? '', p.peso_panetto ?? '', p.idratazione ?? '', p.temp ?? '', p.fascia_ore ?? '',
-    p.sale_pct ?? '', p.olio_pct ?? '',
-    p.farina_g ?? '', p.acqua_g ?? '', p.sale_g ?? '', p.olio_g ?? '', p.lievito_fresco_g ?? '', p.lievito_secco_g ?? '',
-    p.emoji ?? '⏳', p.voto ?? '', p.commento ?? '', id
-  ]);
-
-  return { ok:true, email, id };
 }
 
 function ensureHeader_(sh) {
