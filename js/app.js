@@ -2,12 +2,17 @@
   const cfg = window.APP_CONFIG || {};
   const ENDPOINT = cfg.ENDPOINT;
   const CLIENT_ID = cfg.CLIENT_ID;
+  const GA_ID = cfg.GA_ID || "";
   const BUILD = cfg.BUILD || "unknown";
 
   const $ = (id) => document.getElementById(id);
 
   let idToken = null;
   let cachedDefaultLoaded = false;
+  let analyticsEnabled = false;
+  let analyticsLoginTracked = false;
+
+  const ANALYTICS_CONSENT_KEY = "pizzaAnalyticsConsentV1";
 
   const CACHE_KEY = "pizzaCalculatorCacheV1";
   const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -47,6 +52,7 @@ const YEAST_TABLE = {
     if ($('openHistoryBtn')) $('openHistoryBtn').disabled = false;
     const googleEmail = emailFromGoogleCredential(response.credential);
     if ($('who')) $('who').textContent = googleEmail || "Sessione Google recuperata";
+    trackLoginIfReady();
 
     // Con Apps Script/ContentService preferiamo evitare richieste parallele:
     // la risposta passa da redirect one-time su googleusercontent.
@@ -101,6 +107,82 @@ const YEAST_TABLE = {
     } catch {
       return "";
     }
+  }
+
+
+  function ratingLabel(emoji) {
+    return ({
+      "⏳": "pending",
+      "😍": "ottimo",
+      "😐": "medio",
+      "🤬": "da_rivedere"
+    })[emoji] || "unknown";
+  }
+
+  function hydrationBand(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "unknown";
+    if (n < 65) return "under_65";
+    if (n < 70) return "65_69";
+    if (n < 75) return "70_74";
+    if (n < 80) return "75_79";
+    return "80_plus";
+  }
+
+  function trackEvent(name, params = {}) {
+    if (!analyticsEnabled || typeof window.gtag !== "function") return;
+    window.gtag("event", name, {
+      ...params,
+      app_build: BUILD
+    });
+  }
+
+  function trackLoginIfReady() {
+    if (!analyticsEnabled || !idToken || analyticsLoginTracked) return;
+    analyticsLoginTracked = true;
+    trackEvent("login", { method: "Google" });
+  }
+
+  function enableAnalytics() {
+    if (!GA_ID || analyticsEnabled) return;
+
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+    window.gtag("js", new Date());
+    window.gtag("config", GA_ID);
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(GA_ID);
+    document.head.appendChild(script);
+
+    analyticsEnabled = true;
+    trackLoginIfReady();
+  }
+
+  function setupAnalyticsConsent() {
+    const box = $('analyticsConsent');
+    const saved = localStorage.getItem(ANALYTICS_CONSENT_KEY);
+
+    if (saved === "granted") {
+      enableAnalytics();
+      return;
+    }
+
+    if (saved === "denied") return;
+
+    if (box) box.hidden = false;
+
+    $('analyticsAcceptBtn')?.addEventListener('click', () => {
+      localStorage.setItem(ANALYTICS_CONSENT_KEY, "granted");
+      if (box) box.hidden = true;
+      enableAnalytics();
+    });
+
+    $('analyticsDeclineBtn')?.addEventListener('click', () => {
+      localStorage.setItem(ANALYTICS_CONSENT_KEY, "denied");
+      if (box) box.hidden = true;
+    });
   }
 
   // ===== Calcolo =====
@@ -256,6 +338,7 @@ const YEAST_TABLE = {
         saveDefaultCache(check.email, check.default);
       }
       if ($('defaultState')) $('defaultState').textContent = "Mio default salvato ✓";
+      trackEvent("default_saved");
     } catch (e) {
       if ($('defaultState')) $('defaultState').textContent = "Errore default: " + String(e.message || e);
     }
@@ -278,6 +361,11 @@ const YEAST_TABLE = {
         applyInputsToUI(GENERIC_DEFAULT);
         if ($('defaultState')) $('defaultState').textContent = "Nessun default personale salvato";
       }
+      trackEvent("recipe_saved", {
+        rating: ratingLabel(selectedEmoji),
+        fermentation_band: r.inputs.fascia_ore,
+        hydration_band: hydrationBand(r.inputs.idratazione)
+      });
       if ($('who') && data.email) $('who').textContent = data.email;
     } catch (e) {
       if ($('defaultState')) {
@@ -372,6 +460,7 @@ const YEAST_TABLE = {
     if (!r) return;
     if ($('savePanel')) $('savePanel').hidden = false;
     if ($('saveState')) $('saveState').textContent = "";
+    trackEvent("save_opened");
   }
 
   function markRecipeDirty() {
@@ -521,6 +610,7 @@ const YEAST_TABLE = {
           btn.disabled = true;
           if (state) state.textContent = "Aggiornamento...";
           await updateExperimentRating(it, selectedEmoji, $('pendingCommento')?.value || "");
+          trackEvent("pending_rating_completed", { rating: ratingLabel(selectedEmoji) });
           if (state) state.textContent = "Valutazione salvata ✓";
           setTimeout(() => dlg.close(), 400);
         } catch (e) {
@@ -530,7 +620,10 @@ const YEAST_TABLE = {
       };
     }
 
-    if (typeof dlg.showModal === "function" && !dlg.open) dlg.showModal();
+    if (typeof dlg.showModal === "function" && !dlg.open) {
+      dlg.showModal();
+      trackEvent("pending_rating_shown");
+    }
   }
 
   // ===== Storico: view switching =====
@@ -726,6 +819,10 @@ const YEAST_TABLE = {
       try {
         if (state) state.textContent = "Aggiornamento...";
         await updateExperimentRating(it, selectedEmoji, $('dlgCommento')?.value || "");
+        trackEvent("rating_updated", {
+          rating: ratingLabel(selectedEmoji),
+          source: "history"
+        });
         it.emoji = selectedEmoji;
         it.commento = $('dlgCommento')?.value || "";
         if (state) state.textContent = "Valutazione aggiornata ✓";
@@ -737,6 +834,7 @@ const YEAST_TABLE = {
     });
 
     $('useRecipeBtn')?.addEventListener('click', () => {
+      trackEvent("recipe_reused");
       applyInputsToUI(it);
       dlg.close();
       showHistoryView(false);
@@ -749,6 +847,7 @@ const YEAST_TABLE = {
   // ===== Init =====
   document.addEventListener('DOMContentLoaded', () => {
     if ($('buildVersion')) $('buildVersion').textContent = BUILD;
+    setupAnalyticsConsent();
 
     // Stato auth iniziale
     if ($('loggedOut')) $('loggedOut').style.display = "block";
@@ -775,6 +874,7 @@ const YEAST_TABLE = {
 
     // Storico: apri/chiudi
     $('openHistoryBtn')?.addEventListener('click', async () => {
+      trackEvent("history_opened");
       showHistoryView(true);
       await loadMyExperiments(25);
     });
