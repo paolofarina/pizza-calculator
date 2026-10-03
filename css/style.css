@@ -571,3 +571,18 @@ main.container {
     min-height: 6.2rem;
   }
 }
+
+
+/* Fix visibilità azione calcolo teglia */
+.inlineHelpBtn {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--pico-primary, #0172ad);
+}
+
+.inlineHelpBtn:hover,
+.inlineHelpBtn:focus {
+  color: var(--pico-primary-hover, #015887);
+}
