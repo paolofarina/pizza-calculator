@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 
   <!-- Tuo CSS (solo override leggeri) -->
-  <link rel="stylesheet" href="./css/style.css?v=20261003-10" />
+  <link rel="stylesheet" href="./css/style.css?v=20261003-11" />
 
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -20,7 +20,7 @@
       ENDPOINT: "https://script.google.com/macros/s/AKfycbzRxFjumulVF6OaqirR-YdYW_2MT2Gg2Dc6jLDw6PYQ5Phw3ghh7Jrg6kcheUBGpjybKw/exec",
       CLIENT_ID: "13329073477-55053i7d2okr1cb10d7h3qfl3fq67059.apps.googleusercontent.com",
       GA_ID: "G-2S7C3L5YR7",
-      BUILD: "20261003-10"
+      BUILD: "20261003-11"
     };
   </script>
 </head>
@@ -39,7 +39,10 @@
           <input id="panetti" type="number" min="1" step="1" value="3">
         </label>
         <label>
-          Peso panetto (g)
+          <span class="fieldLabelWithAction">
+            <span>Peso panetto (g)</span>
+            <button id="panettoHelpBtn" type="button" class="inlineHelpBtn">🧮 Calcola dalla teglia</button>
+          </span>
           <input id="peso_panetto" type="number" min="100" step="10" value="250">
         </label>
       </div>
@@ -148,6 +151,65 @@
   </div>
 </section>
 
+<dialog id="panettoDialog">
+  <article>
+    <header class="dialogHeader">
+      <strong>🧮 Calcola il peso del panetto</strong>
+      <button aria-label="Close" rel="prev" id="panettoCloseBtn"></button>
+    </header>
+
+    <p class="panettoIntro">Il risultato è il peso di <strong>un singolo panetto</strong> per <strong>una singola teglia</strong>.</p>
+
+    <div class="panettoShapeChoices" aria-label="Forma della teglia">
+      <button type="button" id="shapeRectBtn" class="secondary active">▭ Rettangolare</button>
+      <button type="button" id="shapeRoundBtn" class="secondary">◯ Tonda</button>
+    </div>
+
+    <div id="rectDimensions" class="grid panettoDimensions">
+      <label>
+        Larghezza (cm)
+        <input id="tegliaWidth" type="number" min="1" step="1" value="30">
+      </label>
+      <label>
+        Lunghezza (cm)
+        <input id="tegliaLength" type="number" min="1" step="1" value="40">
+      </label>
+    </div>
+
+    <div id="roundDimensions" class="panettoDimensions" hidden>
+      <label>
+        Diametro (cm)
+        <input id="tegliaDiameter" type="number" min="1" step="1" value="32">
+      </label>
+    </div>
+
+    <div id="tegliaSummary" class="tegliaSummary"></div>
+
+    <p class="panettoQuestion"><strong>Come vuoi la pizza?</strong></p>
+
+    <div class="panettoWeightChoices">
+      <button type="button" class="secondary panettoWeightBtn" data-factor="0.65" data-style="alta">
+        <span class="panettoChoiceTitle">Alta e focacciosa</span>
+        <span class="panettoChoiceDesc">Più spessa e soffice</span>
+        <small class="panettoFormula"></small>
+        <strong class="panettoResult"></strong>
+      </button>
+      <button type="button" class="secondary panettoWeightBtn" data-factor="0.45" data-style="media">
+        <span class="panettoChoiceTitle">Media</span>
+        <span class="panettoChoiceDesc">Spessore equilibrato</span>
+        <small class="panettoFormula"></small>
+        <strong class="panettoResult"></strong>
+      </button>
+      <button type="button" class="secondary panettoWeightBtn" data-factor="0.30" data-style="bassa">
+        <span class="panettoChoiceTitle">Bassa e sottile</span>
+        <span class="panettoChoiceDesc">Più leggera e croccante</span>
+        <small class="panettoFormula"></small>
+        <strong class="panettoResult"></strong>
+      </button>
+    </div>
+  </article>
+</dialog>
+
 <dialog id="pendingRatingDialog">
   <article>
     <header class="dialogHeader">
@@ -212,10 +274,10 @@
     </div>
 
     <footer class="appFooter">
-      <small class="muted">v0 · build <span id="buildVersion">20261003-10</span> — calcolo in browser, salvataggio su Sheets</small>
+      <small class="muted">v0 · build <span id="buildVersion">20261003-11</span> — calcolo in browser, salvataggio su Sheets</small>
     </footer>
   </main>
 
-  <script src="./js/app.js?v=20261003-10"></script>
+  <script src="./js/app.js?v=20261003-11"></script>
 </body>
 </html>
