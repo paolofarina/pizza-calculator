@@ -377,3 +377,57 @@ main.container {
   height: 100%;
   min-height: 4.25rem;
 }
+
+
+/* --- Consenso Analytics --- */
+.analyticsConsent[hidden] {
+  display: none !important;
+}
+
+.analyticsConsent {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  width: min(760px, calc(100% - 2rem));
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--card-background-color);
+  border: 1px solid var(--muted-border-color);
+  border-radius: 0.85rem;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+.analyticsConsent > div:first-child {
+  flex: 1;
+}
+
+.analyticsConsent small {
+  display: block;
+  margin-top: 0.2rem;
+}
+
+.analyticsConsentActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.analyticsConsentActions button {
+  width: auto;
+  margin: 0;
+}
+
+@media (max-width: 650px) {
+  .analyticsConsent {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analyticsConsentActions button {
+    flex: 1;
+  }
+}
