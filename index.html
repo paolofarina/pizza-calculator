@@ -100,18 +100,22 @@
           <small id="who" class="muted"></small>
         </div>
 
-        <div id="savePanel" class="savePanel">
-          <div class="emojiRow" aria-label="Esito">
-            <button type="button" class="emojiBtn" data-emoji="⏳" aria-label="Da valutare" title="Da valutare">⏳</button>
+        <div id="savePanel" class="savePanel" hidden>
+          <strong>Come è venuto?</strong>
+          <div class="saveChoices" aria-label="Esito">
+            <button type="button" id="saveLaterBtn" class="secondary">⏳ Valuto dopo</button>
             <button type="button" class="emojiBtn" data-emoji="😍" aria-label="Fantastico" title="Fantastico">😍</button>
             <button type="button" class="emojiBtn" data-emoji="😐" aria-label="Ok" title="Ok">😐</button>
             <button type="button" class="emojiBtn" data-emoji="🤬" aria-label="Male" title="Male">🤬</button>
           </div>
           <input type="hidden" id="emoji" value="⏳">
-          <label>
-            Commento (opzionale)
-            <textarea id="commento" rows="2" placeholder="Note..."></textarea>
-          </label>
+          <div id="ratingDetails" hidden>
+            <label>
+              Commento (opzionale)
+              <textarea id="commento" rows="2" placeholder="Note..."></textarea>
+            </label>
+            <button type="button" id="confirmSaveBtn" class="contrast">Conferma salvataggio</button>
+          </div>
         </div>
       </div>
     </section>
