@@ -10,6 +10,7 @@
   if (gload && CLIENT_ID) gload.setAttribute('data-client_id', CLIENT_ID);
 
   let idToken = null;
+  const DEFAULT_KEY = "pizzaCalculatorDefaultV1";
 
   // Tabella lievito fresco (% su farina)
 const YEAST_TABLE = {
@@ -97,6 +98,36 @@ const YEAST_TABLE = {
       sale_pct: Number($('sale_pct').value),
       olio_pct: Number($('olio_pct').value),
     };
+  }
+
+  function applyInputsToUI(i) {
+    if (!i) return;
+    ['panetti', 'peso_panetto', 'idratazione', 'temp', 'fascia_ore', 'sale_pct', 'olio_pct']
+      .forEach(key => {
+        if ($(key) && i[key] !== undefined && i[key] !== null) $(key).value = i[key];
+      });
+    recalc();
+  }
+
+  function saveDefault() {
+    const r = recalc();
+    if (!r) return;
+    localStorage.setItem(DEFAULT_KEY, JSON.stringify(r.inputs));
+    if ($('defaultState')) $('defaultState').textContent = "Default salvato ✓";
+  }
+
+  function loadDefault() {
+    try {
+      const raw = localStorage.getItem(DEFAULT_KEY);
+      if (!raw) return false;
+      const saved = JSON.parse(raw);
+      applyInputsToUI(saved);
+      if ($('defaultState')) $('defaultState').textContent = "Default personale caricato";
+      return true;
+    } catch (e) {
+      console.warn("Default non leggibile:", e);
+      return false;
+    }
   }
 
   function validateInputs(i) {
@@ -223,7 +254,7 @@ const YEAST_TABLE = {
 
     buttons.forEach(btn => btn.addEventListener('click', () => setActive(btn.dataset.emoji)));
 
-    setActive("😐");
+    setActive("⏳");
   }
 
   // ===== Storico: view switching =====
@@ -384,7 +415,17 @@ const YEAST_TABLE = {
         <li>Lievito secco: <strong>${escapeHtml(fmtCell(it.lievito_secco_g))}</strong> g</li>
       </ul>
       ${it.commento ? `<p><strong>Commento</strong><br>${escapeHtml(it.commento)}</p>` : ""}
+      <div class="dialogActions">
+        <button type="button" id="useRecipeBtn">↩ Usa questa ricetta</button>
+      </div>
     `;
+
+    $('useRecipeBtn')?.addEventListener('click', () => {
+      applyInputsToUI(it);
+      dlg.close();
+      showHistoryView(false);
+      if ($('calcState')) $('calcState').textContent = "Ricetta caricata dallo storico: puoi modificarla liberamente.";
+    });
 
     if (typeof dlg.showModal === "function") dlg.showModal();
   }
@@ -401,6 +442,9 @@ const YEAST_TABLE = {
     ['panetti', 'peso_panetto', 'idratazione', 'temp', 'fascia_ore', 'sale_pct', 'olio_pct']
       .forEach(id => $(id)?.addEventListener('input', recalc));
 
+    // Default personale
+    $('setDefaultBtn')?.addEventListener('click', saveDefault);
+
     // Salvataggio
     $('saveBtn')?.addEventListener('click', saveExperiment);
 
@@ -414,6 +458,6 @@ const YEAST_TABLE = {
     // Dialog close
     $('dlgCloseBtn')?.addEventListener('click', () => $('historyDialog')?.close());
 
-    recalc();
+    if (!loadDefault()) recalc();
   });
 })();
