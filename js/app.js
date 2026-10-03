@@ -10,7 +10,6 @@
   if (gload && CLIENT_ID) gload.setAttribute('data-client_id', CLIENT_ID);
 
   let idToken = null;
-  const DEFAULT_KEY = "pizzaCalculatorDefaultV1";
 
   // Tabella lievito fresco (% su farina)
 const YEAST_TABLE = {
@@ -29,17 +28,27 @@ const YEAST_TABLE = {
   }
 };
   // ===== Auth callback =====
-  window.onGoogleCredential = function (response) {
+  window.onGoogleCredential = async function (response) {
     idToken = response.credential;
 
-    // UI: mostra blocco "loggedIn"
     if ($('loggedOut')) $('loggedOut').style.display = "none";
     if ($('loggedIn')) $('loggedIn').style.display = "block";
-
+    if ($('defaultRow')) $('defaultRow').style.display = "flex";
     if ($('saveBtn')) $('saveBtn').disabled = false;
     if ($('openHistoryBtn')) $('openHistoryBtn').disabled = false;
+    if ($('who')) $('who').textContent = "Sessione Google recuperata";
 
-    if ($('who')) $('who').textContent = "Login OK";
+    await loadMyDefault();
+  };
+
+  window.onGooglePromptMoment = function (notification) {
+    // Se Google/FedCM non effettua l'accesso automatico, rendiamo esplicito lo stato.
+    // Alcuni browser non espongono tutti i motivi del mancato prompt.
+    setTimeout(() => {
+      if (!idToken && $('authState')) {
+        $('authState').textContent = "Sessione Google non recuperata — accedi per usare default, salvataggi e storico.";
+      }
+    }, 800);
   };
 
   // ===== Utils =====
@@ -109,24 +118,52 @@ const YEAST_TABLE = {
     recalc();
   }
 
-  function saveDefault() {
-    const r = recalc();
-    if (!r) return;
-    localStorage.setItem(DEFAULT_KEY, JSON.stringify(r.inputs));
-    if ($('defaultState')) $('defaultState').textContent = "Default salvato ✓";
+  async function apiAction(action, payload = {}) {
+    if (!idToken) throw new Error("Login Google necessario");
+
+    const body = new URLSearchParams();
+    body.set("action", action);
+    body.set("id_token", idToken);
+    body.set("payload", JSON.stringify(payload));
+
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: body.toString()
+    });
+    const data = JSON.parse(await res.text());
+    if (!data.ok) throw new Error(data.error || "Operazione fallita");
+    return data;
   }
 
-  function loadDefault() {
+  async function saveDefault() {
+    const r = recalc();
+    if (!r) return;
+    if (!idToken) return alert("Accedi con Google per salvare il tuo default.");
+
     try {
-      const raw = localStorage.getItem(DEFAULT_KEY);
-      if (!raw) return false;
-      const saved = JSON.parse(raw);
-      applyInputsToUI(saved);
-      if ($('defaultState')) $('defaultState').textContent = "Default personale caricato";
-      return true;
+      if ($('defaultState')) $('defaultState').textContent = "Salvataggio default...";
+      await apiAction("save_default", r.inputs);
+      if ($('defaultState')) $('defaultState').textContent = "Mio default salvato ✓";
     } catch (e) {
-      console.warn("Default non leggibile:", e);
-      return false;
+      if ($('defaultState')) $('defaultState').textContent = "Errore default: " + String(e.message || e);
+    }
+  }
+
+  async function loadMyDefault() {
+    if (!idToken) return;
+    try {
+      if ($('defaultState')) $('defaultState').textContent = "Caricamento default...";
+      const data = await apiAction("get_default");
+      if (data.default) {
+        applyInputsToUI(data.default);
+        if ($('defaultState')) $('defaultState').textContent = "Mio default caricato";
+      } else {
+        if ($('defaultState')) $('defaultState').textContent = "Nessun default personale salvato";
+      }
+      if ($('who') && data.email) $('who').textContent = data.email;
+    } catch (e) {
+      if ($('defaultState')) $('defaultState').textContent = "Default non recuperato: " + String(e.message || e);
     }
   }
 
@@ -513,6 +550,14 @@ const YEAST_TABLE = {
     // Dialog close
     $('dlgCloseBtn')?.addEventListener('click', () => $('historyDialog')?.close());
 
-    if (!loadDefault()) recalc();
+    recalc();
+
+    // Se GIS non restituisce automaticamente una credenziale, il calculator
+    // resta utilizzabile e il pulsante Google rimane disponibile.
+    setTimeout(() => {
+      if (!idToken && $('authState')) {
+        $('authState').textContent = "Sessione Google non recuperata — accedi per usare default, salvataggi e storico.";
+      }
+    }, 2500);
   });
 })();
