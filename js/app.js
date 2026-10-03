@@ -385,6 +385,24 @@ const YEAST_TABLE = {
     });
   }
 
+  async function updateExperimentRating(it, emoji, commento) {
+    if (!idToken || !it.id) throw new Error("Salvataggio non identificabile.");
+
+    const body = new URLSearchParams();
+    body.set("action", "update");
+    body.set("id_token", idToken);
+    body.set("payload", JSON.stringify({ id: it.id, emoji, commento }));
+
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: body.toString()
+    });
+    const data = JSON.parse(await res.text());
+    if (!data.ok) throw new Error(data.error || "Aggiornamento fallito");
+    return data;
+  }
+
   function openHistoryDialog(it) {
     const dlg = $('historyDialog');
     const title = $('dlgTitle');
@@ -414,11 +432,48 @@ const YEAST_TABLE = {
         <li>Lievito fresco: <strong>${escapeHtml(fmtCell(it.lievito_fresco_g))}</strong> g</li>
         <li>Lievito secco: <strong>${escapeHtml(fmtCell(it.lievito_secco_g))}</strong> g</li>
       </ul>
-      ${it.commento ? `<p><strong>Commento</strong><br>${escapeHtml(it.commento)}</p>` : ""}
+      <hr>
+      <p><strong>Valutazione</strong></p>
+      <div class="emojiRow dialogEmojiRow" aria-label="Valutazione impasto">
+        <button type="button" class="emojiBtn dlgEmojiBtn" data-emoji="⏳" title="Da valutare">⏳</button>
+        <button type="button" class="emojiBtn dlgEmojiBtn" data-emoji="😍" title="Fantastico">😍</button>
+        <button type="button" class="emojiBtn dlgEmojiBtn" data-emoji="😐" title="Ok">😐</button>
+        <button type="button" class="emojiBtn dlgEmojiBtn" data-emoji="🤬" title="Male">🤬</button>
+      </div>
+      <label>
+        Commento
+        <textarea id="dlgCommento" rows="3" placeholder="Note...">${escapeHtml(it.commento || "")}</textarea>
+      </label>
+      <small id="dlgUpdateState" class="muted"></small>
       <div class="dialogActions">
-        <button type="button" id="useRecipeBtn">↩ Usa questa ricetta</button>
+        <button type="button" id="updateRatingBtn" class="contrast">Salva valutazione</button>
+        <button type="button" id="useRecipeBtn" class="secondary">↩ Usa questa ricetta</button>
       </div>
     `;
+
+    let selectedEmoji = it.emoji || "⏳";
+    const dlgEmojiButtons = body.querySelectorAll('.dlgEmojiBtn');
+    const setDlgEmoji = (emoji) => {
+      selectedEmoji = emoji;
+      dlgEmojiButtons.forEach(b => b.classList.toggle('active', b.dataset.emoji === emoji));
+    };
+    dlgEmojiButtons.forEach(btn => btn.addEventListener('click', () => setDlgEmoji(btn.dataset.emoji)));
+    setDlgEmoji(selectedEmoji);
+
+    $('updateRatingBtn')?.addEventListener('click', async () => {
+      const state = $('dlgUpdateState');
+      try {
+        if (state) state.textContent = "Aggiornamento...";
+        await updateExperimentRating(it, selectedEmoji, $('dlgCommento')?.value || "");
+        it.emoji = selectedEmoji;
+        it.commento = $('dlgCommento')?.value || "";
+        if (state) state.textContent = "Valutazione aggiornata ✓";
+        title.textContent = `${it.emoji || ""} ${formatTs(it.ts)}`;
+        await loadMyExperiments(25);
+      } catch (e) {
+        if (state) state.textContent = "Errore: " + String(e.message || e);
+      }
+    });
 
     $('useRecipeBtn')?.addEventListener('click', () => {
       applyInputsToUI(it);
