@@ -169,8 +169,6 @@ const YEAST_TABLE = {
     try {
       if ($('defaultState')) $('defaultState').textContent = "Caricamento default...";
       const data = await apiAction("get_default");
-      console.log("DEFAULT backend response:", data);
-
       if (data.default) {
         applyInputsToUI(data.default);
         const band = String(data.default.fascia_ore ?? "").trim();
@@ -184,7 +182,6 @@ const YEAST_TABLE = {
       }
       if ($('who') && data.email) $('who').textContent = data.email;
     } catch (e) {
-      console.error("DEFAULT load error:", e);
       if ($('defaultState')) $('defaultState').textContent = "Default non recuperato: " + String(e.message || e);
     }
   }
