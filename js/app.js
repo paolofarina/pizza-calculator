@@ -361,11 +361,6 @@ const YEAST_TABLE = {
         applyInputsToUI(GENERIC_DEFAULT);
         if ($('defaultState')) $('defaultState').textContent = "Nessun default personale salvato";
       }
-      trackEvent("recipe_saved", {
-        rating: ratingLabel(selectedEmoji),
-        fermentation_band: r.inputs.fascia_ore,
-        hydration_band: hydrationBand(r.inputs.idratazione)
-      });
       if ($('who') && data.email) $('who').textContent = data.email;
     } catch (e) {
       if ($('defaultState')) {
@@ -446,6 +441,128 @@ const YEAST_TABLE = {
     }
   }
 
+
+  // ===== Calcolo peso panetto dalla teglia =====
+  let tegliaShape = "rect";
+
+  function getTegliaInfo() {
+    if (tegliaShape === "round") {
+      const diameter = Number($('tegliaDiameter')?.value);
+      if (!Number.isFinite(diameter) || diameter <= 0) return null;
+      const radius = diameter / 2;
+      return {
+        area: Math.PI * radius * radius,
+        description: `Tonda · Ø ${diameter} cm`
+      };
+    }
+
+    const width = Number($('tegliaWidth')?.value);
+    const length = Number($('tegliaLength')?.value);
+    if (!Number.isFinite(width) || width <= 0 || !Number.isFinite(length) || length <= 0) return null;
+
+    return {
+      area: width * length,
+      description: `Rettangolare · ${width} × ${length} cm`
+    };
+  }
+
+  function formatFactor(value) {
+    return Number(value).toLocaleString('it-IT', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function updatePanettoCalculator() {
+    const info = getTegliaInfo();
+    const summary = $('tegliaSummary');
+    const buttons = document.querySelectorAll('.panettoWeightBtn');
+
+    if (!info) {
+      if (summary) summary.textContent = "Inserisci dimensioni valide della teglia.";
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.dataset.weight = "";
+        const formula = btn.querySelector('.panettoFormula');
+        const result = btn.querySelector('.panettoResult');
+        if (formula) formula.textContent = "";
+        if (result) result.textContent = "—";
+      });
+      return;
+    }
+
+    const areaRounded = Math.round(info.area);
+    if (summary) {
+      summary.innerHTML = `<strong>Teglia selezionata:</strong> ${escapeHtml(info.description)} · area <strong>${areaRounded} cm²</strong>`;
+    }
+
+    buttons.forEach(btn => {
+      const factor = Number(btn.dataset.factor);
+      const weight = Math.round(info.area * factor);
+      btn.disabled = false;
+      btn.dataset.weight = String(weight);
+
+      const formula = btn.querySelector('.panettoFormula');
+      const result = btn.querySelector('.panettoResult');
+
+      if (formula) {
+        formula.textContent = `Calcolo: ${areaRounded} cm² × ${formatFactor(factor)} g/cm²`;
+      }
+      if (result) result.textContent = `${weight} g per panetto`;
+    });
+  }
+
+  function setTegliaShape(shape) {
+    tegliaShape = shape === "round" ? "round" : "rect";
+
+    if ($('rectDimensions')) $('rectDimensions').hidden = tegliaShape !== "rect";
+    if ($('roundDimensions')) $('roundDimensions').hidden = tegliaShape !== "round";
+    $('shapeRectBtn')?.classList.toggle('active', tegliaShape === "rect");
+    $('shapeRoundBtn')?.classList.toggle('active', tegliaShape === "round");
+
+    updatePanettoCalculator();
+  }
+
+  function setupPanettoCalculator() {
+    const dlg = $('panettoDialog');
+
+    $('panettoHelpBtn')?.addEventListener('click', () => {
+      setTegliaShape(tegliaShape);
+      trackEvent("panetto_helper_opened");
+      if (dlg && typeof dlg.showModal === "function" && !dlg.open) dlg.showModal();
+    });
+
+    $('panettoCloseBtn')?.addEventListener('click', () => dlg?.close());
+    $('shapeRectBtn')?.addEventListener('click', () => setTegliaShape("rect"));
+    $('shapeRoundBtn')?.addEventListener('click', () => setTegliaShape("round"));
+
+    ['tegliaWidth', 'tegliaLength', 'tegliaDiameter'].forEach(id => {
+      $(id)?.addEventListener('input', updatePanettoCalculator);
+    });
+
+    document.querySelectorAll('.panettoWeightBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const weight = Number(btn.dataset.weight);
+        if (!Number.isFinite(weight) || weight <= 0) return;
+
+        const field = $('peso_panetto');
+        if (field) {
+          field.value = String(weight);
+          field.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        trackEvent("panetto_weight_selected", {
+          tray_shape: tegliaShape,
+          pizza_style: btn.dataset.style || "unknown"
+        });
+
+        dlg?.close();
+      });
+    });
+
+    updatePanettoCalculator();
+  }
+
   // ===== Salvataggio =====
   function closeSavePanel() {
     if ($('savePanel')) $('savePanel').hidden = true;
@@ -513,6 +630,11 @@ const YEAST_TABLE = {
             : "Impasto salvato correttamente.";
         }
       }
+      trackEvent("recipe_saved", {
+        rating: ratingLabel(selectedEmoji),
+        fermentation_band: r.inputs.fascia_ore,
+        hydration_band: hydrationBand(r.inputs.idratazione)
+      });
       if ($('who') && data.email) $('who').textContent = data.email;
       if ($('commento')) $('commento').value = "";
       closeSavePanel();
@@ -853,6 +975,7 @@ const YEAST_TABLE = {
     if ($('loggedIn')) $('loggedIn').style.display = "none";
 
     setupSaveFlow();
+    setupPanettoCalculator();
 
     if ($('fascia_ore') && !YEAST_TABLE.bands.includes($('fascia_ore').value)) {
       $('fascia_ore').value = "6-8";
